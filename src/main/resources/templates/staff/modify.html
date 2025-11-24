@@ -1,0 +1,296 @@
+<!doctype html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="format-detection" content="telephone=no">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="viewport"
+          content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <meta name="robots" content="noindex">
+    <meta name="googlebot" content="noindex">
+    <title>토스트랩 관리자</title>
+
+    <th:block th:replace="~{fragments/head :: commonHead}"></th:block>
+
+    <!-- favicon -->
+    <link rel="icon" th:href="@{/images/logo/favi_ad.png}" type="image/x-icon"/>
+
+    <!-- CSS -->
+    <link rel="stylesheet" th:href="@{/css/toast.css}" />
+
+    <!-- JS -->
+    <script th:src="@{/js/lib/jquery-3.2.1.min.js}"></script>
+    <script th:src="@{/js/toast.js}"></script>
+    <script src="https://t1.daumcdn.net/mapjsapi/bundle/postcode/prod/postcode.v2.js"></script>
+    <style>
+        .error{display:block;margin-top:4px;font-size:12px;color:#ef4444}
+    </style>
+</head>
+<body>
+<div id="wrap" class="frame">
+<div th:replace="~{fragments/header :: header}"></div>
+
+    <div id="container" class="container">
+        <div class="title-bar">
+            <h2 class="page-title ellipsis">사원 수정(<span th:text="${staff.staffName}">사원명</span>)</h2>
+        </div>
+
+        <main id="content" class="max-900">
+            <div class="write-form box-wrap">
+                <form name="inputform" id="inputform">
+                    <input type="hidden" name="id" th:value="${staff.id}">
+
+                    <fieldset class="pack-down gap-12">
+                        <div class="pack-down gap-20">
+                            <div class="pack-down col">
+                                <label class="fs-ss fc-999" for="staffName">사원명</label>
+                                <input type="text" id="staffName" class="input-text large"
+                                       name="staffName"
+                                       th:value="${staff.staffName}"
+                                       title="사원명" placeholder="사원명 입력" />
+                                <small id="staffNameError" class="error" aria-live="polite"></small>
+                            </div>
+
+                            <div class="row col-3">
+
+                                <div class="pack-down col">
+                                    <label class="fs-ss fc-999" for="staffEmail">이메일</label>
+                                    <input type="text" id="staffEmail" class="input-text medium"
+                                           name="staffEmail"
+                                           th:value="${staff.staffEmail}"
+                                           title="이메일" placeholder="이메일 입력" />
+                                    <small id="staffEmailError" class="error" aria-live="polite"></small>
+                                </div>
+
+                                <div class="pack-down col">
+                                    <label class="fs-ss fc-999" for="staffDepartment">부서</label>
+
+                                    <select name="staffDepartment" id="staffDepartment" class="select medium">
+                                        <option>선택</option>
+                                        <option th:each="c : ${StaffDepartment}"
+                                                th:value="${c.name()}"
+                                                th:text="${c.description}"
+                                                th:selected="${c == staff.staffDepartment}">
+                                            일반
+                                        </option>
+                                    </select>
+                                    <small id="staffDepartmentError" class="error" aria-live="polite"></small>
+                                </div>
+
+                                <div class="pack-down col">
+                                    <label class="fs-ss fc-999" for="staffEmploymentType">근무 형태</label>
+
+                                    <select name="staffEmploymentType" id="staffEmploymentType" class="select medium">
+                                        <option>선택</option>
+                                        <option th:each="c : ${StaffEmploymentType}"
+                                                th:value="${c.name()}"
+                                                th:text="${c.description}"
+                                                th:selected="${c == staff.staffEmploymentType}">
+                                            일반
+                                        </option>
+                                    </select>
+                                    <small id="staffEmploymentTypeError" class="error" aria-live="polite"></small>
+                                </div>
+                            </div>
+
+                            <div class="row col-3">
+                                <div class="pack-down col">
+                                    <label class="fs-ss fc-999" for="staffPhone">연락처</label>
+                                    <input type="text" name="staffPhone" id="staffPhone" class="input-text medium"
+                                           th:value="${staff.staffPhone}"
+                                           title="연락처" placeholder="연락처 입력" />
+                                    <small id="staffPhoneError" class="error" aria-live="polite"></small>
+                                </div>
+                                <div class="pack-down col">
+                                    <label class="fs-ss fc-999" for="staffBirth">생년월일</label>
+                                    <input type="date" name="staffBirth" id="staffBirth" class="input-text medium"
+                                           th:value="${staff.staffBirth != null ? #temporals.format(staff.staffBirth, 'yyyy-MM-dd') : ''}"
+                                           title="생년월일" placeholder="생년월일 입력" />
+                                    <small id="staffBirthError" class="error" aria-live="polite"></small>
+                                </div>
+                                <div class="pack-down col">
+                                </div>
+                            </div>
+
+                            <div class="row col">
+                                <div class="field pack-down col">
+                                    <label class="fs-ss fc-999" for="userAddress1">주소 (선택)</label>
+                                    <input type="button" class="btn small color1" id="addressSearch" style="margin-left:10px" value="주소 검색" onclick="findAddr()">
+                                    <div th:with="addr=${staff.staffAddress != null ? #strings.arraySplit(staff.staffAddress, ',') : null}" >
+                                        <div class="insert pack-left">
+                                            <input name="userAddress1" id="userAddress1" type="text" class="input-text medium" size="50" placeholder="주소를 검색해주세요" readonly th:value="${addr != null and addr.length > 0 ? addr[0] : ''}">
+                                        </div>
+                                        <div class="insert pack-left">
+                                            <input name="userAddress2" id="userAddress2" type="text" class="input-text medium" size="50" placeholder="나머지 주소 작성" th:value="${addr != null and addr.length > 1 ? #strings.trim(addr[1]) : ''}">
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="row col-3">
+
+                                <div class="pack-down col">
+                                    <label class="fs-ss fc-999" for="storeSearch">근무지 (선택)</label>
+                                    <div class="input-wrap" style="position:relative;">
+                                        <input id="storeSearch" class="input-text large"
+                                               placeholder="매장명 입력(선택)" list="storeList" autocomplete="off"
+                                               th:value="${staff?.store != null ? staff.store.name : ''}">
+                                        <input type="hidden" id="storeIdFk" name="storeIdFk">
+                                        <datalist id="storeList">
+                                            <option th:each="s : ${stores}"
+                                                    th:value="${s.storeName}"
+                                                    th:attr="data-id=${s.storeId}"></option>
+                                        </datalist>
+                                        <small id="storeHint" class="error" style="display:none">목록에서 정확히 선택해주세요</small>
+                                    </div>
+                                </div>
+
+                                <div class="pack-down col">
+                                    <label class="fs-ss fc-999" for="staffStartDate">입사일자 (선택)</label>
+                                    <input type="date" id="staffStartDate" class="input-text large"
+                                           name="staffStartDate"
+                                           th:value="${staff.staffStartDate != null ? #temporals.format(staff.staffStartDate, 'yyyy-MM-dd') : ''}"
+                                           title="입사일자"/>
+                                </div>
+
+                                <div class="pack-down col">
+                                    <label class="fs-ss fc-999" for="staffEndDate">퇴사일자 (선택)</label>
+                                    <input type="date" id="staffEndDate" class="input-text large"
+                                           name="staffEndDate"
+                                           th:value="${staff.staffEndDate != null ? #temporals.format(staff.staffEndDate, 'yyyy-MM-dd') : ''}"
+                                           title="퇴사일자" />
+                                </div>
+
+                            </div>
+                        </div><!--pack-down.gap-12-->
+
+                        <div class="button-area pack-center">
+                            <button type="submit" class="btn large color1">저장</button>
+                        </div>
+                    </fieldset>
+                </form>
+            </div><!--.write-form.box-wrap -->
+            <div class="button-area pack-both">
+                <a href="/admin/staff/list" class="btn bdr-color1">목록으로</a>
+            </div>
+        </main>
+    <div th:replace="~{fragments/footer :: footer}"></div>
+</div><!-- // #container  -->
+</div><!--#wrap.frame-->
+<script>
+    // ---- helpers ----
+    const getValue = (id) => document.getElementById(id);
+
+    function setError(fieldId, msg) {
+      const input = getValue(fieldId);
+      const box   = getValue(fieldId + 'Error');
+      if (input) input.classList.add('is-error');
+      if (box)   box.textContent = msg || '';
+    }
+    function clearFieldError(fieldId) {
+      const input = getValue(fieldId);
+      const box   = getValue(fieldId + 'Error');
+      if (input) input.classList.remove('is-error');
+      if (box)   box.textContent = '';
+    }
+    function clearAllErrors() {
+      document.querySelectorAll('.is-error').forEach(el => el.classList.remove('is-error'));
+      document.querySelectorAll('[id$="Error"]').forEach(el => el.textContent = '');
+    }
+
+    // ---- 클라이언트 검증(함수 내부!) ----
+    function clientValidate() {
+      const errs = {};
+
+      // 필수 항목 (@NotNull 과 1:1)
+      if (!getValue('staffName').value.trim())            errs.staffName           = '직원 이름을 입력해주세요';
+      if (!getValue('staffEmail').value.trim())           errs.staffEmail          = '이메일을 입력해주세요';
+      if (!getValue('staffPhone').value.trim())           errs.staffPhone          = '연락처를 입력해주세요';
+      if (!getValue('staffDepartment').value)             errs.staffDepartment     = '부서를 선택해주세요';
+      if (!getValue('staffEmploymentType').value)         errs.staffEmploymentType = '근무 형태를 선택해주세요';
+      if (!getValue('staffBirth').value)                  errs.staffBirth          = '생년월일을 입력해주세요';
+
+      // 형식
+      const email = getValue('staffEmail').value.trim();
+      if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email))
+        errs.staffEmail = '이메일 형식이 올바르지 않습니다';
+
+      const phone = getValue('staffPhone').value.trim();
+      if (phone && !/^[0-9\-]{9,13}$/.test(phone))
+        errs.staffPhone = '연락처는 숫자와 하이픈만 입력해주세요';
+
+      // 날짜 규칙
+      const toDate = (v)=> v ? new Date(v) : null; // yyyy-MM-dd
+      const today  = new Date(); today.setHours(0,0,0,0);
+
+      const birth  = toDate(getValue('staffBirth').value);
+      const start  = toDate(getValue('staffStartDate').value);
+      const end    = toDate(getValue('staffEndDate').value);
+
+      if (birth && birth >= today) errs.staffBirth = '생년월일은 과거여야 합니다';
+      if (start && start >  today) errs.staffStartDate = '입사일자는 과거 또는 오늘이어야 합니다';
+      if (end   && end   >  today) errs.staffEndDate   = '퇴사일자는 과거 또는 오늘이어야 합니다';
+      if (birth && start && start < birth) errs.staffStartDate = '입사일자는 생년월일 이후여야 합니다';
+      if (start && end   && end   < start) errs.staffEndDate   = '퇴사일자는 입사일자 이후여야 합니다';
+
+      return errs;
+    }
+
+    // ---- 필드 입력 시 에러 자동 해제 ----
+    (function wireLiveClear() {
+      const form = getValue('inputform');
+      if (!form) return;
+      form.addEventListener('input',  (e) => { if (e.target?.id) clearFieldError(e.target.id); });
+      form.addEventListener('change', (e) => { if (e.target?.id) clearFieldError(e.target.id); });
+    })();
+
+    // ---- datalist(근무지) 동기화 ----
+    (function(){
+      const input  = getValue('storeSearch');
+      const hidden = getValue('storeIdFk');
+      const list   = getValue('storeList');
+      const hint   = getValue('storeHint');
+      const opts = () => Array.from(list?.options || []);
+      function sync(){
+        const val = (input?.value || '').trim();
+        const exact = opts().find(o => o.value === val);
+        if (hidden) hidden.value = exact ? (exact.getAttribute('data-id') || '') : '';
+        if (hint)   hint.style.display = (val && !hidden?.value) ? 'inline' : 'none';
+        if (hidden?.value) clearFieldError('storeIdFk');
+      }
+      input?.addEventListener('input',  sync);
+      input?.addEventListener('change', sync);
+      input?.addEventListener('blur',   sync);
+
+      sync();
+    })();
+    document.getElementById("inputform").addEventListener("submit", function(e) {
+        e.preventDefault(); // 폼 기본 제출 막기
+
+        const formData = new FormData(this);
+
+        fetch("/admin/API/staff/modify", {
+            method: "POST",
+            body: formData
+        })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error("서버 응답 오류: " + response.status);
+                }
+                return response.json();
+            })
+            .then(data => {
+                alert("수정 성공 : " + data.id);
+                window.location.href = "/admin/staff/detail/" + data.id;
+            })
+            .catch(error => {
+                console.error("에러 발생:", error);
+                alert("수정 실패");
+            });
+    });
+
+</script>
+</body>
+</html>

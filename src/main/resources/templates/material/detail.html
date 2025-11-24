@@ -1,0 +1,103 @@
+<!doctype html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="format-detection" content="telephone=no">
+    <meta name="viewport"
+          content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+    <meta name="robots" content="noindex">
+    <meta name="googlebot" content="noindex">
+    <!-- Bootstrap CSS CDN -->
+    <th:block th:replace="~{fragments/head :: commonHead}"></th:block>
+
+    <link href="/admin/css/toast.css" rel="stylesheet"/>
+    <script src="/admin/js/lib/jquery-3.2.1.min.js"></script>
+    <script src="/admin/js/toast.js"></script>
+</head>
+<body>
+<div id="wrap" class="frame">
+<div th:replace="~{fragments/header :: header}"></div>
+
+    <div id="container" class="container">
+        <div class="title-bar">
+            <h2 class="page-title ellipsis max-1132">
+                <span th:text="${material.name}">재료명</span>
+                상세
+            </h2>
+        </div>
+
+        <main id="content" class="max-1132">
+            <div class="box-wrap">
+                <div class="pack-down gap-20">
+                    <div class="pack-down gap-0">
+                        <div>
+                            <span th:class="'badge rounded-pill ' + (${material.materialStatus.name()} == 'USE' ? 'bg-primary' : '  bg-secondary')" th:text="${material.materialStatus.description}">상태</span>
+                        </div>
+
+                        <h3 class="fs-2xl fw-600 fc-333" th:text="${material.name}">재료명</h3>
+                    </div>
+
+                    <div class="row col-3">
+                        <div class="pack-down col">
+                            <span class="fs-ss fc-999">ID</span>
+                            <span th:text="${material.id}">ID</span>
+                            <input type="hidden" name="id" th:value="${material.id}">
+                        </div>
+
+                        <div class="pack-down col">
+                            <span class="fs-ss fc-999">code</span>
+                            <span th:text="${material.code}">code</span>
+                        </div>
+
+                        <div class="pack-down col">
+                            <span class="fs-ss fc-999">카테고리</span>
+                            <span th:text="${material.materialCategory.description}">카테고리</span>
+                        </div>
+                    </div>
+
+                    <div class="row col-3">
+                        <div class="pack-down col">
+                            <span class="fs-ss fc-999">기본단위(소진단위, cf.g/kg/ea)</span>
+                            <span th:text="${material.baseUnit}">기본단위</span>
+                        </div>
+                        <div class="pack-down col">
+                            <span class="fs-ss fc-999">판매단위(cf.g/kg/ea/box)</span>
+                            <span th:text="${material.salesUnit}">판매단위</span>
+                        </div>
+                        <div class="pack-down col">
+                            <span class="fs-ss fc-999">변환비율(판매단위/기본단위)</span>
+                            <span th:text="${material.conversionRate}">변환비율</span>
+                        </div>
+                    </div>
+
+                    <div class="row col-3">
+                        <div class="pack-down col">
+                            <span class="fs-ss fc-999">적정 수량</span>
+                            <span th:text="${material.optimalQuantity}">적정 수량</span>
+                        </div>
+                        <div class="pack-down col">
+                            <span class="fs-ss fc-999">공급업체명</span>
+                            <span th:text="${material.supplier}">공급업체명</span>
+                        </div>
+                        <div class="pack-down col">
+                            <span class="fs-ss fc-999">보관온도</span>
+                            <span th:text="${material.materialTemperature != null ? material.materialTemperature.description : '미지정'}"></span>
+                        </div>
+                    </div>
+                </div><!--pack-down.gap-12-->
+
+                <div class="button-area pack-both">
+                    <a th:href="@{/material/delete/{id}(id=${material.id})}" class="btn medium bdr-color1">삭제</a>
+                    <a th:href="@{/material/modify/{id}(id=${material.id})}" class="btn medium color1">수정</a>
+                </div>
+            </div><!--//.box-wrap-->
+            <div class="button-area pack-both">
+                <a href="/admin/material/list" class="btn medium color1">목록</a>
+            </div>
+        </main>
+    <div th:replace="~{fragments/footer :: footer}"></div>
+</div><!-- // #container  -->
+</div><!--#wrap.frame-->
+</body>
+</html>

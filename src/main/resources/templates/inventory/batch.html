@@ -1,0 +1,140 @@
+<!doctype html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="format-detection" content="telephone=no">
+    <meta name="viewport"
+          content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+    <meta name="robots" content="noindex">
+    <meta name="googlebot" content="noindex">
+    <!-- Bootstrap CSS CDN -->
+    <th:block th:replace="~{fragments/head :: commonHead}"></th:block>
+
+    <link href="/admin/css/toast.css" rel="stylesheet"/>
+    <script src="/admin/js/lib/jquery-3.2.1.min.js"></script>
+    <script src="/admin/js/toast.js"></script>
+    <script src="/admin/js/excel-download.js" defer></script>
+</head>
+<body>
+<div id="wrap" class="frame">
+    <div th:replace="~{fragments/header :: header}"></div>
+
+    <div id="container" class="container">
+        <div class="title-bar">
+            <h2 class="page-title ellipsis max-1132">
+                <span class="fw-400">입고 LOT 상세 &gt;</span>
+                <span th:text="${lot != null && lot.lotNo != null ? lot.lotNo : 'LOT-' + batchId}">LOT번호</span>
+            </h2>
+        </div>
+
+        <main id="content" class="max-1132">
+
+            <div class="button-area pack-both">
+                <!-- 뒤로가기: 브라우저 history 기반 -->
+                <button type="button" class="btn medium bdr-color1" onclick="history.back();">이전</button>
+                <a href="/admin/inventory/list" class="btn medium bdr-color1">재고 목록</a>
+            </div>
+
+            <div class="box-wrap pack-down gap-20">
+                <!-- LOT 요약 -->
+                <section class="pack-down">
+                    <h3 class="blind">LOT 기본정보</h3>
+                    <div class="table-wrap">
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th scope="row">입고일</th>
+                                    <th scope="row">입고수량</th>
+                                    <th scope="row">현재잔량</th>
+                                    <th scope="row">유통기한</th>
+                                    <th scope="row">입고단가</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td data-th="입고일"
+                                        th:text="${lot != null && lot.receivedDate != null
+                                                 ? #temporals.format(lot.receivedDate, 'yyyy-MM-dd HH:mm')
+                                                 : '-'}">
+                                    </td>
+                                    <td data-th="입고수량"
+                                        th:text="${lot != null && lot.receivedQuantity != null
+                                                 ? #numbers.formatDecimal(lot.receivedQuantity,1,'COMMA',0,'POINT')
+                                                 : '0'}">
+                                    </td>
+                                    <td data-th="현재잔량"
+                                        th:text="${lot != null && lot.remainingQuantity != null
+                                                 ? #numbers.formatDecimal(lot.remainingQuantity,1,'COMMA',0,'POINT')
+                                                 : '0'}">
+                                    </td>
+                                    <td data-th="유통기한"
+                                        th:text="${lot != null && lot.expirationDate != null
+                                                 ? #temporals.format(lot.expirationDate, 'yyyy-MM-dd')
+                                                 : '-'}">
+                                    </td>
+                                    <td data-th="입고단가"
+                                        th:text="${lot != null && lot.unitPrice != null
+                                                 ? #numbers.formatInteger(lot.unitPrice,1,'COMMA')
+                                                 : '-'}">
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </section>
+
+                <!-- LOT 출고 이력 -->
+                <section class="pack-down">
+                    <div class="pack-both">
+                        <h3 class="section-title">LOT 출고 이력</h3>
+                        <button type="button" class="btn medium bdr-color2"
+                                th:attr="data-excel-endpoint=@{'/API/inventory/batch/' + ${batchId} + '/out-history/download'}"
+                                onclick="excelDownload(this)">출고 이력 엑셀 다운로드</button>
+                    </div>
+                    <table class="data-table">
+                        <thead>
+                        <tr>
+                            <th scope="col">출고일시</th>
+                            <th scope="col">가맹점</th>
+                            <th scope="col">출고 수량</th>
+                        </tr>
+                        </thead>
+                        <tbody>
+                            <tr th:if="${outHistory == null or #lists.isEmpty(outHistory.content)}">
+                                <td colspan="4">출고 이력이 없습니다.</td>
+                            </tr>
+
+                            <tr th:each="row : ${outHistory.content}">
+                                <td data-th="출고일시"
+                                    th:text="${row.outDate != null
+                                             ? #temporals.format(row.outDate, 'yyyy-MM-dd HH:mm')
+                                             : (row.logDate != null
+                                                ? #temporals.format(row.logDate, 'yyyy-MM-dd HH:mm')
+                                                : '')}">
+                                    2025-01-01 10:00
+                                </td>
+                                <td data-th="가맹점"
+                                    th:text="${row.storeName != null ? row.storeName : '-'}">
+                                    가맹점명
+                                </td>
+                                <td data-th="출고 수량"
+                                    th:text="${row.qty != null ? #numbers.formatDecimal(row.qty,1,'COMMA',0,'POINT') : '0'}">
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+
+                    <!-- 필요시 페이징 -->
+                    <div style="text-align:center;" th:if="${outHistory != null}">
+                        <div th:replace="~{fragments/pagination :: pagination (${outHistory})}"></div>
+                    </div>
+                </section>
+            </div>
+        </main>
+
+        <div th:replace="~{fragments/footer :: footer}"></div>
+    </div>
+</div>
+</body>
+</html>

@@ -1,0 +1,244 @@
+<!doctype html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="format-detection" content="telephone=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="robots" content="noindex">
+    <meta name="googlebot" content="noindex">
+    <title>공지사항 수정</title>
+
+    <!-- 공통/정적 리소스 (context-path 자동 포함) -->
+    <th:block th:replace="~{fragments/head :: commonHead}"></th:block>
+    <link th:href="@{/css/toast.css}" rel="stylesheet"/>
+    <link th:href="@{/ckeditor/style.css}" rel="stylesheet"/>
+    <link th:href="@{/ckeditor/ckeditor5.css}" rel="stylesheet"/>
+    <script th:src="@{/js/lib/jquery-3.2.1.min.js}"></script>
+    <script th:src="@{/js/toast.js}"></script>
+
+    <!-- CKEditor CDN -->
+    <script src="https://cdn.ckeditor.com/ckeditor5/41.2.1/classic/ckeditor.js"></script>
+    <style>
+        .ck-editor__editable:not(.ck-editor__nested-editable) { height: 450px; }
+    </style>
+</head>
+<body>
+<div id="wrap" class="frame">
+    <div th:replace="~{fragments/header :: header}"></div>
+
+    <div id="container" class="container">
+        <!-- 타이틀바 -->
+        <div class="title-bar">
+            <h2 class="page-title ellipsis max-1132">
+                <span th:text="${notice.title}">공지 제목</span> 수정
+            </h2>
+        </div>
+
+        <main id="content" class="max-1132">
+            <div class="write-form box-wrap">
+                <form name="frm" id="frm">
+                    <input type="hidden" name="id" id="id" th:value="${notice.id}"/>
+
+                    <fieldset class="pack-down gap-12">
+                        <legend class="blind">공지 기본 정보</legend>
+
+                        <!-- 첫줄: 카테고리 / 우선순위 / 노출여부 -->
+                        <div class="row col-3">
+                            <div class="pack-down col">
+                                <label class="fs-ss fc-999" for="noticeCategory">카테고리</label>
+                                <div class="insert pack-down">
+                                    <select name="noticeCategory" id="noticeCategory" class="select medium">
+                                        <option value="">선택</option>
+                                        <option th:each="c : ${NoticeCategory}"
+                                                th:value="${c.name()}"
+                                                th:text="${c.description}"
+                                                th:selected="${c == notice.noticeCategory}">
+                                            일반
+                                        </option>
+                                    </select>
+                                    <p id="noticeCategoryError" class="warning"></p>
+                                </div>
+                            </div>
+
+                            <div class="pack-down col">
+                                <label class="fs-ss fc-999" for="noticePriority">우선순위</label>
+                                <div class="insert pack-down">
+                                    <select name="noticePriority" id="noticePriority" class="select medium">
+                                        <option value="">선택</option>
+                                        <option th:each="p : ${NoticePriority}"
+                                                th:value="${p.name()}"
+                                                th:text="${p.description}"
+                                                th:selected="${p == notice.noticePriority}">
+                                            일반
+                                        </option>
+                                    </select>
+                                    <p id="noticePriorityError" class="warning"></p>
+                                </div>
+                            </div>
+
+                            <div class="pack-down col">
+                                <label class="fs-ss fc-999" for="isShow">노출여부</label>
+                                <div class="insert pack-down">
+                                    <label class="checkbox">
+                                        <input type="checkbox" name="isShow" id="isShow"
+                                               th:checked="${notice.isShow}" />
+                                        <span>공개</span>
+                                    </label>
+                                    <p id="isShowError" class="warning"></p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 작성자 -->
+                        <div class="field pack-down">
+                            <label class="label medium" for="writer">작성자</label>
+                            <div class="insert pack-down">
+                                <input type="text" name="writer" id="writer" class="input-text medium"
+                                       th:value="${notice.writer}" title="작성자" placeholder="작성자 입력"/>
+                                <p id="writerError" class="warning"></p>
+                            </div>
+                        </div>
+
+                        <!-- 제목 -->
+                        <div class="field pack-down">
+                            <label class="label medium required" for="title">제목</label>
+                            <div class="insert pack-down">
+                                <input type="text" name="title" id="title" class="input-text large"
+                                       th:value="${notice.title}" title="제목" placeholder="제목 입력"/>
+                                <p id="titleError" class="warning"></p>
+                            </div>
+                        </div>
+
+                        <!-- 본문 (CKEditor) -->
+                        <div class="field pack-down">
+                            <label class="label medium required" for="body">내용</label>
+                            <div class="insert pack-down">
+                                <textarea name="body" id="body" class="body" th:text="${notice.body}"></textarea>
+                                <p id="bodyError" class="warning"></p>
+                            </div>
+                        </div>
+
+                        <!-- 첨부 업로드 -->
+                        <div class="field pack-down">
+                            <label class="label medium" for="files">첨부파일</label>
+                            <div class="insert pack-down">
+                                <input type="file" name="files" id="files" multiple/>
+                            </div>
+                        </div>
+
+                        <!-- 첨부 리스트 -->
+                        <section class="pack-down">
+                            <h3 class="fs-lg fw-600">첨부파일 목록</h3>
+                            <table class="data-table" th:if="${attachments != null and !attachments.isEmpty()}">
+                                <thead>
+                                <tr>
+                                    <th scope="col">파일명</th>
+                                    <th scope="col" style="width:120px;">관리</th>
+                                </tr>
+                                </thead>
+                                <tbody>
+                                <tr th:each="att : ${attachments}">
+                                    <td>
+                                        <a th:href="${att.url}" target="_blank"
+                                           th:text="${att.originalFilename}">첨부파일명</a>
+                                    </td>
+                                    <td>
+                                        <button type="button"
+                                                class="btn small bdr-gray"
+                                                th:onclick="deleteAttachment([[${att.id}]])">
+                                            삭제
+                                        </button>
+                                    </td>
+                                </tr>
+                                </tbody>
+                            </table>
+                            <div class="fc-999 fs-sm" th:if="${attachments == null or attachments.isEmpty()}">
+                                첨부파일이 없습니다.
+                            </div>
+                        </section>
+
+                        <!-- 저장 버튼 -->
+                        <div class="button-area pack-center">
+                            <button type="submit" class="btn large color1">저장</button>
+                        </div>
+                    </fieldset>
+                </form>
+            </div><!-- //.write-form.box-wrap -->
+
+            <!-- 하단 버튼 -->
+            <div class="button-area pack-both">
+                <a th:href="@{/notice/list}" class="btn medium color1">목록</a>
+            </div>
+        </main>
+
+        <div th:replace="~{fragments/footer :: footer}"></div>
+    </div><!-- // #container -->
+</div><!-- // #wrap -->
+
+<!-- CKEditor / 제출 / 첨부삭제 (context-path 안전) -->
+<script th:inline="javascript">
+    // CKEditor
+    ClassicEditor.create(document.querySelector(".body"), {
+        language: "ko",
+        ckfinder: { uploadUrl: /*[[ @{/image/upload} ]]*/ '' }
+    }).catch(console.error);
+
+    // 제출
+    document.getElementById("frm").addEventListener("submit", function (e) {
+        e.preventDefault();
+
+        const formData = new FormData(this);
+        // 경고 초기화
+        ["noticeCategory","noticePriority","isShow","writer","title","body"].forEach(f=>{
+            const el = document.getElementById(f + "Error"); if (el) el.textContent = "";
+        });
+
+        fetch(/*[[ @{/API/notice/modify} ]]*/ '', {
+            method: "POST",
+            body: formData
+        })
+        .then(async (res) => {
+            const data = await res.json();
+            if (!res.ok) {
+                if (res.status === 400 && data && data.errors) {
+                    Object.keys(data.errors).forEach(field => {
+                        const msg = data.errors[field];
+                        const el = document.getElementById(field + "Error");
+                        if (el) el.textContent = msg;
+                    });
+                }
+                throw new Error("서버 응답 오류");
+            }
+            alert("수정 성공 : " + (data && data.id ? data.id : ""));
+            const base = /*[[ @{/notice/detail/} ]]*/ '';
+            window.location.href = base + (data && data.id ? data.id : document.getElementById('id').value);
+        })
+        .catch(err => {
+            console.error("에러 발생:", err);
+            alert("수정 실패");
+        });
+    });
+
+    // 첨부 삭제
+    function deleteAttachment(attId) {
+        const fd = new FormData();
+        fd.append("id", attId);
+
+        fetch(/*[[ @{/API/notice/delete/attachment} ]]*/ '', {
+            method: "POST",
+            body: fd
+        })
+        .then(async (res) => {
+            const data = await res.json();
+            if (!res.ok) throw new Error("삭제 실패");
+            if (data && data.success) {
+                // 현재 수정 페이지 새로고침
+                window.location.href = /*[[ @{/notice/modify/{id}(id=${notice.id})} ]]*/ '';
+            }
+        })
+        .catch(err => console.error(err));
+    }
+</script>
+</body>
+</html>

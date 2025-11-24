@@ -1,0 +1,183 @@
+<!doctype html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="robots" content="noindex">
+    <th:block th:replace="~{fragments/head :: commonHead}"></th:block>
+
+    <link href="/admin/css/toast.css" rel="stylesheet"/>
+    <script src="/admin/js/lib/jquery-3.2.1.min.js"></script>
+    <script src="/admin/js/toast.js"></script>
+    <script src="/admin/js/excel-download.js" defer></script>
+</head>
+<body>
+<div id="wrap" class="frame">
+    <div th:replace="~{fragments/header :: header}"></div>
+
+    <div id="container" class="container">
+        <div class="title-bar">
+            <div class="pack-both">
+                <div class="pack-left gap-8">
+                    <select title="가맹점 선택" class="select large" style="width: 120px;"
+                            id="storeSelect" onchange="onStoreChange(this.value)">
+                        <option value="">전가맹점</option>
+                        <option th:each="store : ${stores}"
+                                th:value="${store.storeId}"
+                                th:text="${store.storeName}"
+                                th:selected="${storeInventorySearchDTO.storeId == store.storeId}">
+                        </option>
+                    </select>
+                    <h2 class="page-title ellipsis">재고 현황</h2>
+                </div>
+
+                <a href="/admin/inventory/list" class="btn medium color2">본사 재고 현황</a>
+            </div>
+        </div>
+
+        <main id="content">
+            <div class="box-wrap">
+                <!-- 검색 영역 -->
+                <div id="search" class="search">
+                    <form name="frm" id="frm" method="get">
+                        <fieldset>
+                            <legend class="blind">검색</legend>
+                            <div class="pack-both">
+
+                                <div class="pack-left">
+                                    <input title="검색어" type="search" name="s"
+                                           th:value="${storeInventorySearchDTO.s}"
+                                           class="input-text medium form-control"
+                                           placeholder="재료명, 카테고리 검색"/>
+                                    <input type="submit" value="검색" class="btn medium color1"/>
+                                </div>
+
+                                <div class="pack-left">
+                                    <!-- 상태 필터 -->
+                                    <div class="btn medium bdr-color1 btn-group btn-group-toggle" data-bs-toggle="buttons">
+                                        <label class="btn medium"
+                                               th:classappend="${storeInventorySearchDTO.status == null} ? ' active' : ''">
+                                            <input type="radio" name="status" value=""
+                                                   th:checked="${storeInventorySearchDTO.status == null}"
+                                                   onclick="setFilter('')">전체
+                                        </label>
+
+                                        <label class="btn medium"
+                                               th:classappend="${storeInventorySearchDTO.status?.name() == 'SUFFICIENT'} ? ' active' : ''">
+                                            <input type="radio" name="status" value="SUFFICIENT"
+                                                   th:checked="${storeInventorySearchDTO.status?.name() == 'SUFFICIENT'}"
+                                                   onclick="setFilter('SUFFICIENT')">충분
+                                        </label>
+
+                                        <label class="btn medium"
+                                               th:classappend="${storeInventorySearchDTO.status?.name() == 'LOW'} ? ' active' : ''">
+                                            <input type="radio" name="status" value="LOW"
+                                                   th:checked="${storeInventorySearchDTO.status?.name() == 'LOW'}"
+                                                   onclick="setFilter('LOW')">부족
+                                        </label>
+
+                                        <label class="btn medium"
+                                               th:classappend="${storeInventorySearchDTO.status?.name() == 'SHORTAGE'} ? ' active' : ''">
+                                            <input type="radio" name="status" value="SHORTAGE"
+                                                   th:checked="${storeInventorySearchDTO.status?.name() == 'SHORTAGE'}"
+                                                   onclick="setFilter('SHORTAGE')">품절
+                                        </label>
+                                    </div>
+
+                                    <!-- 페이지 크기 -->
+                                    <div class="pack-left page-size">
+                                        <select title="뷰사이즈"
+                                                th:field="${storeInventorySearchDTO.size}"
+                                                class="select medium"
+                                                onchange="setPageSize(this.value)">
+                                            <option value="10">10</option>
+                                            <option value="30">30</option>
+                                            <option value="50">50</option>
+                                            <option value="100">100</option>
+                                        </select>
+                                        <span class="fs-ss">개씩 보기</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </fieldset>
+                    </form>
+                </div>
+
+                <!-- 목록 테이블 -->
+                <section class="pack-down">
+                    <div class="list-header pack-both">
+                        <div class="pack-left">
+                        </div>
+                        <div class="pack-left">
+                            <button type="button" class="btn medium bdr-color2"
+                                    data-excel-endpoint="/API/store/inventory/download"
+                                    data-store-id="[[${storeId}]]"
+                                    data-form-id="frm"
+                                    onclick="excelDownload(this)">엑셀다운로드</button>
+                        </div>
+                    </div>
+
+                    <table class="data-table">
+                        <thead>
+                        <tr>
+                            <th scope="col">카테고리</th>
+                            <th scope="col">재료명</th>
+                            <th scope="col">현재 수량</th>
+                            <th scope="col">적정 수량</th>
+                            <th scope="col">상태</th>
+                            <th scope="col">수정일</th>
+                        </tr>
+                        </thead>
+                        <tbody>
+                        <tr th:if="${inventories.content.isEmpty()}">
+                            <td colspan="7" class="text-center">조회된 재고가 없습니다.</td>
+                        </tr>
+                        <tr th:each="inventory : ${inventories.content}">
+                            <td th:text="${inventory.categoryName}">카테고리</td>
+                            <td th:text="${inventory.materialName}">재료명</td>
+                            <td th:text="${inventory.quantity}">0</td>
+                            <td th:text="${inventory.optimalQuantity}">0</td>
+                            <td>
+                                <span th:class="|badge rounded-pill ${inventory.status.name() == 'SUFFICIENT' ? 'bg-success' : (inventory.status.name() == 'LOW' ? 'bg-warning' : 'bg-danger') }|"
+                                      th:text="${inventory.status.description}">
+
+                                </span>
+                            </td>
+                            <td th:text="${#temporals.format(inventory.updateDate, 'yyyy-MM-dd HH:mm')}">2025-01-01</td>
+                        </tr>
+                        </tbody>
+                    </table>
+
+                    <div style="text-align:center;">
+                        <div th:replace="~{fragments/pagination :: pagination (${inventories})}"></div>
+                    </div>
+                </section>
+            </div>
+        </main>
+        <div th:replace="~{fragments/footer :: footer}"></div>
+    </div>
+</div>
+
+<script>
+    function onStoreChange(storeId) {
+        if (!storeId) {
+            window.location = "/admin/inventory/store/list";
+            return;
+        }
+        // 기존 검색 조건, 페이징, 상태 필터 등 초기화
+        window.location = `/admin/inventory/store/list?storeId=${storeId}`;
+    }
+    function setFilter(status, path){
+        const p=new URLSearchParams(location.search);
+        p.set('status',status||'');
+        location.href=(path||location.pathname)+'?'+p;
+    }
+    function setPageSize(size, path){
+        const p=new URLSearchParams(location.search);
+        p.delete('page');p.set('size',size);
+        location.href=(path||location.pathname)+'?'+p;
+    }
+</script>
+</body>
+</html>

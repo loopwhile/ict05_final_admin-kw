@@ -1,0 +1,229 @@
+<!doctype html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="format-detection" content="telephone=no">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="viewport"
+          content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+    <meta name="robots" content="noindex">
+    <meta name="googlebot" content="noindex">
+    <title>토스트랩 관리자</title>
+
+    <!-- 공통 <head> 조각 삽입 -->
+    <th:block th:replace="~{fragments/head :: commonHead}"></th:block>
+
+    <!-- favicon -->
+    <link rel="icon" th:href="@{/images/logo/favi_ad.png}" type="image/x-icon"/>
+
+    <!-- CSS -->
+    <link rel="stylesheet" th:href="@{/css/toast.css}"/>
+
+    <!-- JS -->
+    <script th:src="@{/js/lib/jquery-3.2.1.min.js}"></script>
+    <script th:src="@{/js/toast.js}"></script>
+    <script src="https://t1.daumcdn.net/mapjsapi/bundle/postcode/prod/postcode.v2.js"></script>
+
+    <!-- 폼 에러 스타일 -->
+    <style>.error{display:block;margin-top:4px;font-size:12px;color:#ef4444}</style>
+</head>
+<body>
+<div id="wrap" class="frame">
+    <div th:replace="~{fragments/header :: header}"></div>
+
+    <div id="container" class="container">
+
+        <!-- 페이지 타이틀 바 -->
+        <div class="title-bar">
+            <!-- store.name → store.storeName -->
+            <h2 class="page-title ellipsis">
+                가맹점 수정(<span th:text="${store.storeName}">가맹점명</span>)
+            </h2>
+        </div>
+
+        <main id="content" class="max-900">
+            <!-- 작성 폼 래퍼 -->
+            <div class="write-form box-wrap">
+
+                <form th:action="@{/store/modify/{id}(id=${store.storeId})}" method="post" th:object="${store}">
+                    <input type="hidden" th:field="*{storeId}">
+                    <!-- Spring Security 사용 시 -->
+<!--                    <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">-->
+
+                    <!-- ===== FIELDSET START: 입력 필드 그룹 ===== -->
+                    <fieldset class="pack-down gap-12">
+
+                        <!-- 상단 그룹 래퍼 -->
+                        <div class="pack-down gap-20">
+
+                            <!-- 가맹점명 -->
+                            <div class="pack-down col">
+                                <label class="fs-ss fc-999" for="storeName">가맹점명</label>
+                                <input type="text" class="input-text large"
+                                       id="storeName"
+                                       th:field="*{storeName}"
+                                       title="가맹점명" placeholder="가맹점명 입력"/>
+                                <small id="storeNameError" class="error" aria-live="polite"></small>
+                            </div>
+
+                            <div class="row col-2">
+                                <!-- 사업자등록번호 -->
+                                <div class="pack-down col">
+                                    <label class="fs-ss fc-999" for="businessRegistrationNumber">사업장등록번호</label>
+                                    <input type="text" class="input-text medium"
+                                           id="businessRegistrationNumber"
+                                           th:field="*{businessRegistrationNumber}"
+                                           title="사업장등록번호" placeholder="사업장등록번호 입력"/>
+                                </div>
+
+                                <!-- 매장 연락처 -->
+                                <div class="pack-down col">
+                                    <label class="fs-ss fc-999" for="storePhone">매장 연락처</label>
+                                    <input type="text" class="input-text medium"
+                                           id="storePhone"
+                                           th:field="*{storePhone}"
+                                           title="매장 연락처" placeholder="매장 연락처 입력"/>
+                                </div>
+                            </div>
+
+                            <div class="row col-2">
+                                <div class="pack-down col">
+                                    <label class="fs-ss fc-999" for="storeMonthlySales"> 월 매출</label>
+                                    <input type="text" class="input-text medium"
+                                           id="storeMonthlySales"
+                                           th:field="*{storeMonthlySales}"
+                                           title="월 매출" placeholder=" 월 매출 입력"/>
+                                </div>
+                                <div class="pack-down col">
+                                    <label class="fs-ss fc-999" for="storeTotalEmployees"> 총 직원수</label>
+                                    <input type="text" class="input-text medium"
+                                           id="storeTotalEmployees"
+                                           th:field="*{storeTotalEmployees}"
+                                           title="총 직원수" placeholder="총 직원수 입력"/>
+                                </div>
+                            </div>
+
+                            <div class="row col-2">
+                                <!-- 가맹점 구분 -->
+                                <div class="pack-down col">
+                                    <label class="fs-ss fc-999" for="storeType">가맹점 구분</label>
+                                    <select id="storeType" class="select medium" th:field="*{storeType}">
+                                        <option value="">선택</option>
+                                        <option th:each="c : ${StoreType}"
+                                                th:value="${c}"
+                                                th:text="${c.description}">
+                                        </option>
+                                    </select>
+                                    <small id="storeTypeError" class="error" aria-live="polite"></small>
+                                </div>
+
+                                <!-- 가맹점 상태 -->
+                                <div class="pack-down col">
+                                    <label class="fs-ss fc-999" for="storeStatus">가맹점 상태</label>
+                                    <select id="storeStatus" class="select medium" th:field="*{storeStatus}">
+                                        <option value="">선택</option>
+                                        <option th:each="c : ${StoreStatus}"
+                                                th:value="${c}"
+                                                th:text="${c.description}">
+                                        </option>
+                                    </select>
+                                    <small id="storeStatusError" class="error" aria-live="polite"></small>
+                                </div>
+                            </div>
+
+                            <div class="row col-3">
+                                <div class="field pack-down col">
+                                    <label class="fs-ss fc-999" for="userAddress1">사업장 주소 (선택)</label>
+                                    <input type="button" class="btn small color1" id="addressSearch"
+                                           style="margin-left:10px" value="주소 검색" onclick="findAddr()">
+                                    <div th:with="addr=${store.storeLocation != null ? #strings.arraySplit(store.storeLocation, ',') : null}">
+                                        <div class="insert pack-left">
+                                            <input name="userAddress1" id="userAddress1" type="text"
+                                                   class="input-text medium" size="50" placeholder="주소를 검색해주세요" readonly
+                                                   th:value="${addr != null and addr.length > 0 ? addr[0] : ''}">
+                                        </div>
+                                        <div class="insert pack-left">
+                                            <input name="userAddress2" id="userAddress2" type="text"
+                                                   class="input-text medium" size="50" placeholder="나머지 주소 작성"
+                                                   th:value="${addr != null and addr.length > 1 ? #strings.trim(addr[1]) : ''}">
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- ===== 행 그룹(3열) : 계약일/가맹일/계약기간 ===== -->
+                            <div class="row col-3">
+                                <!-- 계약일 -->
+                                <div class="pack-down col">
+                                    <label for="storeContractStartDate">계약일</label>
+                                    <input type="date" id="storeContractStartDate" th:field="*{storeContractStartDate}">
+                                </div>
+                                <!-- 가맹일 -->
+                                <div class="pack-down col">
+                                    <label for="storeContractAffiliateDate">가맹일</label>
+                                    <input type="date" id="storeContractAffiliateDate" th:field="*{storeContractAffiliateDate}">
+                                </div>
+                                <!-- 매장계약기간 -->
+                                <div class="pack-down col">
+                                    <label class="fs-ss fc-999" for="storeContractTerm">매장계약기간</label>
+                                    <input type="text" class="input-text medium"
+                                           id="storeContractTerm"
+                                           th:field="*{storeContractTerm}"
+                                           title="매장계약기간" placeholder="매장계약기간 입력"/>
+                                </div>
+                            </div>
+                            <!-- ===== 행 그룹(3열) END ===== -->
+
+                            <!-- ===== 행 그룹(3열) : 가맹비 / 월 로열티 ===== -->
+                            <div class="row col-3">
+                                <!-- 가맹비 -->
+                                <div class="pack-down col">
+                                    <label class="fs-ss fc-999" for="storeAffiliatePrice">가맹비</label>
+                                    <input type="text" class="input-text medium"
+                                           id="storeAffiliatePrice"
+                                           th:field="*{storeAffiliatePrice}"
+                                           title="가맹비" placeholder="가맹비 입력"/>
+                                </div>
+
+                                <!-- 월 로열티 -->
+                                <div class="pack-down col">
+                                    <label class="fs-ss fc-999" for="royalty">월 로열티</label>
+                                    <input type="text" class="input-text medium"
+                                           id="royalty"
+                                           th:field="*{royalty}"
+                                           title="월 로열티" placeholder="월 로열티 입력"/>
+                                </div>
+                            </div>
+                            <!-- ===== 행 그룹(3열) END ===== -->
+
+                            <!-- ===== 행 그룹(3열) : 특이사항 ===== -->
+                            <div class="row col-3">
+                                <div class="pack-down col">
+                                    <label class="fs-ss fc-999" for="comment">특이사항</label>
+                                    <input type="text" class="input-text medium"
+                                           id="comment"
+                                           th:field="*{comment}"
+                                           title="특이사항" placeholder="특이사항 입력"/>
+                                </div>
+                            </div>
+                            <!-- ===== 행 그룹(3열) END ===== -->
+
+                        </div><!-- /.pack-down.gap-20 (상단 그룹 래퍼) -->
+
+                        <div class="button-area pack-center">
+                            <button type="submit" class="btn large color1">저장</button>
+                        </div>
+                    </fieldset>
+                    <!-- ===== FIELDSET END ===================================== -->
+                </form>
+            </div>
+            <div class="button-area pack-both">
+                <a th:href="@{/store/list}" class="btn medium color1">목록</a>
+            </div>
+        </main>
+        <div th:replace="~{fragments/footer :: footer}"></div>
+    </div>
+</div>
+</body>
+</html>

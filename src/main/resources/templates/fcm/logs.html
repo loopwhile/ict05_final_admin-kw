@@ -1,0 +1,134 @@
+<!doctype html>
+<html xmlns:th="http://www.thymeleaf.org" lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <title>FCM 발송 로그</title>
+
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="robots" content="noindex">
+  <th:block th:replace="~{fragments/head :: commonHead}"></th:block>
+
+  <link href="/admin/css/toast.css" rel="stylesheet"/>
+  <script src="/admin/js/lib/jquery-3.2.1.min.js"></script>
+  <script src="/admin/js/toast.js"></script>
+  <style>
+    /* ➊ FCM logs 테이블 레이아웃 */
+.data-table.table-wide { table-layout: fixed; }
+
+/* ➋ 열 폭 지정 (colgroup과 함께 사용) */
+.data-table.table-wide col.col-id       { width: 72px; }
+.data-table.table-wide col.col-target   { width: 260px; }
+.data-table.table-wide col.col-title    { width: 220px; }
+.data-table.table-wide col.col-body     { width: 360px; } /* 남는폭은 여기로 */
+.data-table.table-wide col.col-msgid    { width: 340px; }
+.data-table.table-wide col.col-error    { width: 240px; }
+.data-table.table-wide col.col-sentat   { width: 160px; }
+
+/* ➌ 헬퍼 유틸 */
+.mono { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
+.ok   { color: #2e7d32; }
+.err  { color: #c62828; }
+.nowrap { white-space: nowrap; }
+.ellipsis-1 { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.wrap { white-space: normal; word-break: keep-all; } /* 한글 단어 단위 줄바꿈 */
+.table-scroll { overflow-x: auto; }
+
+/* 한줄 보기 토글 모드 */
+.nowrap-mode .wrap { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+
+  </style>
+</head>
+<body>
+<div id="wrap" class="frame">
+  <div th:replace="~{fragments/header :: header}"></div>
+
+  <div id="container" class="container">
+    <div class="title-bar">
+      <div class="pack-both">
+        <h2 class="page-title ellipsis">FCM 발송 로그</h2>
+        <div class="pack-left" style="gap:8px">
+          <button type="button" class="btn medium bdr-gray" onclick="location.reload()">새로고침</button>
+          <button type="button" class="btn medium bdr-color2" id="btnWrapToggle">한줄 보기</button>
+        </div>
+      </div>
+    </div>
+
+    <main id="content">
+      <div class="box-wrap">
+        <section class="pack-down">
+          <div class="list-header pack-both">
+            <div class="fs-s c-gray">최근 <b th:text="${limit}">100</b>건 표시</div>
+          </div>
+
+          <div class="table-scroll" id="logTableWrap">
+            <table class="data-table table-wide">
+              <!-- 열 폭은 colgroup으로 고정 -->
+              <colgroup>
+                <col class="col-id" />
+                <col class="col-target" />
+                <col class="col-title" />
+                <col class="col-body" />
+                <col class="col-msgid" />
+                <col class="col-error" />
+                <col class="col-sentat" />
+              </colgroup>
+              <thead>
+              <tr>
+                <th scope="col">ID</th>
+                <th scope="col">Target</th>
+                <th scope="col">Title</th>
+                <th scope="col">Body</th>
+                <th scope="col">MessageId</th>
+                <th scope="col">Error</th>
+                <th scope="col">SentAt</th>
+              </tr>
+              </thead>
+              <tbody>
+              <tr th:each="r : ${rows}">
+                <td class="nowrap" th:text="${r.id()}"></td>
+                <td>
+                  <div><b>topic</b>:
+                    <span class="mono ellipsis-1" th:title="${r.topic()}" th:text="${r.topic() != null ? r.topic() : '-'}">-</span>
+                  </div>
+                  <div><b>token</b>:
+                    <span class="mono ellipsis-1" th:title="${r.token()}" th:text="${r.token() != null ? r.token() : '-'}">-</span>
+                  </div>
+                </td>
+                <td class="wrap" th:text="${r.title()}"></td>
+                <td class="wrap" th:text="${r.body()}"></td>
+                <td>
+                  <span class="mono ellipsis-1 ok"
+                        th:classappend="${r.resultMessageId()} == null ? '' : ' ok'"
+                        th:title="${r.resultMessageId()}"
+                        th:text="${r.resultMessageId() != null ? r.resultMessageId() : '-'}">-</span>
+                </td>
+                <td>
+                  <span class="mono ellipsis-1 err"
+                        th:title="${r.resultError()}"
+                        th:text="${r.resultError() != null ? r.resultError() : '-'}">-</span>
+                </td>
+                <td class="nowrap" th:text="${#temporals.format(r.sentAt(),'yyyy-MM-dd HH:mm:ss')}"></td>
+              </tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+      </div>
+    </main>
+
+    <div th:replace="~{fragments/footer :: footer}"></div>
+  </div>
+</div>
+
+<script>
+  // “한줄 보기 / 줄바꿈” 토글
+  document.getElementById('btnWrapToggle')?.addEventListener('click', () => {
+    const box = document.getElementById('logTableWrap');
+    const on = box.classList.toggle('nowrap-mode');
+    document.getElementById('btnWrapToggle').textContent = on ? '줄바꿈 보기' : '한줄 보기';
+  });
+</script>
+</body>
+</html>

@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="format-detection" content="telephone=no">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="viewport"
+          content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <meta name="robots" content="noindex">
+    <meta name="googlebot" content="noindex">
+    <title>토스트랩 관리자</title>
+
+    <th:block th:replace="~{fragments/head :: commonHead}"></th:block>
+
+    <!-- favicon -->
+    <link rel="icon" th:href="@{/images/logo/favi_ad.png}" type="image/x-icon"/>
+
+    <!-- CSS -->
+    <link rel="stylesheet" th:href="@{/css/toast.css}" />
+
+    <!-- JS -->
+    <script th:src="@{/js/lib/jquery-3.2.1.min.js}"></script>
+    <script th:src="@{/js/toast.js}"></script>
+</head>
+<body class="scroll-up">
+<div id="wrap" class="frame">
+    <div th:replace="~{fragments/header :: header}"></div>
+
+    <div id="container" class="container">
+        <div class="title-bar">
+            <h2 class="page-title ellipsis">시스템 메뉴 접근 관리</h2>
+        </div>
+
+        <main id="content" class="pack-down gap-20">
+            <div class="box-wrap">
+                <div id="search" class="search">
+                    <form th:action="@{/navauth/list}" method="get" th:object="${navSearchDTO}">
+                        <fieldset>
+                            <legend class="blind">검색</legend>
+                            <div class="pack-both">
+                                <div class="pack-left">
+                                    <input type="text" id="searchTxt" class="input-text medium form-control"
+                                        th:field="*{keyword}" title="검색어" placeholder="메뉴명, 경로, 코드로 검색...">
+                                    <button type="submit" class="btn medium color1">검색</button>
+                                </div>
+                                <div></div>
+                            </div>
+                        </fieldset>
+                    </form>
+                </div>
+                <section class="pack-down">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>메뉴코드</th>
+                                <th>메뉴명</th>
+                                <th>경로</th>
+                                <th>활성화</th>
+                                <th>관리</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr th:each="nav, idx : ${navs.content}">
+                                <td th:text="${nav.navItemCode}">메뉴코드</td>
+                                <td th:text="${nav.navItemName}">성명</td>
+                                <td th:text="${nav.navItemPath}">생년월일</td>
+                                <td>
+                                    <span th:class="|badge rounded-pill ${
+                                    nav.navItemEnabled == true ? 'bg-success' : 'bg-warning'}|"
+                                          th:text="${nav.navItemEnabled == true} ? '활성화' : '비활성화'">
+                                      상태
+                                    </span>
+                                </td>
+                                <td>
+                                    <button type="button"
+                                            class="btn small toggle-navauth"
+                                            th:classappend="${nav.navItemEnabled} ? ' bdr-color2' : ' color1'"
+                                            th:data-url="${nav.navItemEnabled}
+                                                              ? @{/api/navauth/{id}/disable(id=${nav.id})}
+                                                              : @{/api/navauth/{id}/enable(id=${nav.id})}">
+                                        <span th:text="${nav.navItemEnabled} ? '비활성화' : '활성화'">토글</span>
+                                    </button>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                    <div style="text-align: center;">
+                        <div th:replace="~{fragments/pagination :: pagination (${navs})}"></div>
+                    </div>
+                </section>
+            </div>
+        </main>
+        <div th:replace="~{fragments/footer :: footer}"></div>
+    </div><!-- // #container  -->
+</div><!-- // #wrap  -->
+<script th:inline="javascript">
+    /*<![CDATA[*/
+    $(document).on('click', '.toggle-navauth', function(e){
+      e.preventDefault();
+      const url = $(this).data('url');
+
+      $.post(url)
+        .done(function(res){
+          alert(res.enabled ? '활성화됨' : '비활성화됨');
+          location.reload();
+        })
+        .fail(function(xhr){
+          const msg = (xhr.responseJSON && xhr.responseJSON.message) ? xhr.responseJSON.message : xhr.status;
+          alert('처리에 실패했습니다: ' + msg);
+        });
+    });
+    /*]]>*/
+</script>
+</body></html>

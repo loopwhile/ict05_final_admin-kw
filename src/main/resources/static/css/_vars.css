@@ -1,0 +1,43 @@
+@charset "UTF-8";
+/* ICT TeamONE _ 토스트랩 _ KimJuyeon _ 20251014 */
+:root {
+	--vh100: calc(var(--vh, 1vh) * 100);
+
+	/* laout */
+	--aside: 84px;
+
+	/* btn & input */
+	--xsmall: 20px;
+	--small: 28px;
+	--medium: 36px;
+	--large: 48px;
+
+	/* scroll */
+	--scroll: 4px;
+
+	/* popup */
+	--pop-header: 80px;
+
+	/* title */
+	--page-title: 28px;
+
+	/* 변수 재정의 */
+	--bs-border-radius : 4px;
+
+}
+
+@media all and (min-width: 768px){
+	:root {
+		/* layout */
+		--header: 86px;
+		--congap: 32px;
+		--asidewide: 260px;
+	}
+}
+@media all and (max-width: 767px) {
+	:root {
+		--header: 64px;
+		--congap: 16px;
+		--asidewide: 200px;
+	}
+}

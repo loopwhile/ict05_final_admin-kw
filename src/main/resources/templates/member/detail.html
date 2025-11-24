@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="format-detection" content="telephone=no">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="viewport"
+          content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <meta name="robots" content="noindex">
+    <meta name="googlebot" content="noindex">
+    <meta name="_csrf" th:content="${_csrf.token}">
+    <meta name="_csrf_header" th:content="${_csrf.headerName}">
+    <title>토스트랩 관리자</title>
+
+    <th:block th:replace="~{fragments/head :: commonHead}"></th:block>
+
+    <!-- favicon -->
+    <link rel="icon" th:href="@{/images/logo/favi_ad.png}" type="image/x-icon"/>
+
+    <!-- CSS -->
+    <link rel="stylesheet" th:href="@{/css/toast.css}" />
+
+    <!-- JS -->
+    <script th:src="@{/js/lib/jquery-3.2.1.min.js}"></script>
+    <script th:src="@{/js/toast.js}"></script>
+</head>
+<body class="scroll-up">
+<div id="wrap" class="frame">
+    <div th:replace="~{fragments/header :: header}"></div>
+
+    <div id="container" class="container">
+        <div class="title-bar">
+            <h2 class="page-title ellipsis">회원 상세</h2>
+        </div>
+
+        <main id="content" class="max-900">
+            <div class="box-wrap">
+                <div class="pack-down gap-20">
+                    <h3 class="fs-2xl fw-600 fc-333" th:text="${member.name}">회원명</h3>
+
+                    <div class="row col-2">
+                        <div class="pack-down col">
+                            <span class="fs-ss fc-999">ID</span>
+                            <span th:text="${member.id}">ID</span>
+                        </div>
+
+                        <div class="pack-down col">
+                            <span class="fs-ss fc-999">이메일</span>
+                            <span th:text="${member.email}">이메일</span>
+                        </div>
+                    </div>
+
+                    <div class="row col-2">
+                        <div class="pack-down col">
+                            <span class="fs-ss fc-999">연락처</span>
+                            <span th:text="${member.phone}">연락처</span>
+                        </div>
+                        <div class="pack-down col">
+                            <span class="fs-ss fc-999">상태</span>
+                            <span th:text="${member.status.description}">상태</span>
+                        </div>
+                    </div>
+                </div><!--pack-down.gap-12-->
+
+                <div class="button-area pack-both">
+                    <a th:href="@{/member/withdraw/{id}(id=${member.id})}" class="btn medium bdr-color1">탈퇴</a>
+                    <div class="pack-both">
+                        <div class="pack-left">
+                            <button id="btnLinkMe" type="button" class="btn medium color2" th:attr="data-member-id=${member.id}">계정 연동</button>
+                        </div>
+                        <div class="pack-right">
+                            <a th:href="@{/member/modify/{id}(id=${member.id})}" class="btn medium color1">수정</a>
+                        </div>
+                    </div>
+                </div>
+            </div><!--//.box-wrap-->
+            <div class="button-area pack-both">
+                <a href="/admin/member/list" class="btn medium color1">목록</a>
+            </div>
+        </main>
+        <div th:replace="~{fragments/footer :: footer}"></div>
+    </div><!-- // #container  -->
+</div><!-- // #wrap  -->
+<script th:inline="javascript">
+    // ===== 설정 =====
+    // 세션 기반 엔드포인트가 준비되어 있으면 true
+    const USE_ME_ENDPOINT = false;
+
+    // 서버가 내려준 현재 멤버 id를 JS 변수로 주입 (PathVariable 방식에서 사용)
+    const CURRENT_MEMBER_ID = /*[[${member.id}]]*/ 0;
+
+    // CSRF
+    const CSRF_TOKEN  = document.querySelector('meta[name="_csrf"]')?.content || '';
+    const CSRF_HEADER = document.querySelector('meta[name="_csrf_header"]')?.content || 'X-CSRF-TOKEN';
+
+    function toast(msg) { alert(msg); } // 임시. 프로젝트의 toast 함수 있으면 그걸로 바꿔도 됨.
+
+    async function postJson(url, bodyObj) {
+      const headers = { 'Accept': 'application/json' };
+      if (CSRF_TOKEN) headers[CSRF_HEADER] = CSRF_TOKEN;
+
+      const res = await fetch(url, {
+        method: 'POST',
+        headers,
+        body: bodyObj instanceof FormData ? bodyObj : null
+      });
+      return res;
+    }
+
+    // 1) 본인 계정으로 연동
+    document.getElementById('btnLinkMe')?.addEventListener('click', async () => {
+      try {
+        const btn = document.getElementById('btnLinkMe');
+        btn.disabled = true;
+
+        let url = `/admin/API/member/${CURRENT_MEMBER_ID}/linkStaff`;
+
+        const res = await postJson(url);
+        if (res.ok) {
+          const data = await res.json().catch(()=>({}));
+          toast('연동 성공');
+          // 필요하면 이동
+          // location.reload();
+        } else if (res.status === 404) {
+          toast('동일 이메일의 사원이 없습니다');
+        } else if (res.status === 409) {
+          toast('이미 다른 멤버와 연결된 사원입니다');
+        } else {
+          const txt = await res.text();
+          console.error('연동 실패 응답:', txt);
+          toast('연동에 실패했습니다');
+        }
+      } catch (e) {
+        console.error(e);
+        toast('연동 중 오류가 발생했습니다');
+      } finally {
+        const btn = document.getElementById('btnLinkMe');
+        if (btn) btn.disabled = false;
+      }
+    });
+</script>
+</body></html>

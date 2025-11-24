@@ -1,0 +1,157 @@
+<!doctype html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="format-detection" content="telephone=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="robots" content="noindex">
+    <meta name="googlebot" content="noindex">
+    <title>공지사항 상세</title>
+
+    <!-- 공통 리소스 -->
+    <th:block th:replace="~{fragments/head :: commonHead}"></th:block>
+    <link th:href="@{/css/toast.css}" rel="stylesheet"/>
+    <script th:src="@{/js/lib/jquery-3.2.1.min.js}"></script>
+    <script th:src="@{/js/toast.js}"></script>
+</head>
+<body>
+<div id="wrap" class="frame">
+    <div th:replace="~{fragments/header :: header}"></div>
+
+    <div id="container" class="container">
+        <!-- 타이틀바 -->
+        <div class="title-bar">
+            <h2 class="page-title ellipsis max-1132">
+                <span th:text="${notice.title}">공지 제목</span>
+                상세
+            </h2>
+        </div>
+
+        <main id="content" class="max-1132">
+            <div class="box-wrap">
+                <!-- 상단 요약 -->
+                <div class="pack-down gap-20">
+                    <div class="pack-down gap-0">
+                        <div>
+                            <!-- 공개/비공개 배지 -->
+                            <span th:class="'badge rounded-pill ' + (${notice.isShow} ? 'bg-success' : 'bg-secondary')"
+                                  th:text="${notice.isShow} ? '공개' : '비공개'">상태</span>
+                        </div>
+                        <h3 class="fs-2xl fw-600 fc-333" th:text="${notice.title}">공지 제목</h3>
+                    </div>
+
+                    <!-- 1행: ID/카테고리/우선순위 -->
+                    <div class="row col-3">
+                        <div class="pack-down col">
+                            <span class="fs-ss fc-999">ID</span>
+                            <span th:text="${notice.id}">999</span>
+                        </div>
+                        <div class="pack-down col">
+                            <span class="fs-ss fc-999">카테고리</span>
+                            <span th:text="${notice.noticeCategory}">CATEGORY</span>
+                        </div>
+                        <div class="pack-down col">
+                            <span class="fs-ss fc-999">우선순위</span>
+                            <span th:text="${notice.noticePriority}">PRIORITY</span>
+                        </div>
+                    </div>
+
+                    <!-- 2행: 작성자/작성일/노출여부 -->
+                    <div class="row col-3">
+                        <div class="pack-down col">
+                            <span class="fs-ss fc-999">작성자</span>
+                            <span th:text="${notice.writer}">writer</span>
+                        </div>
+                        <div class="pack-down col">
+                            <span class="fs-ss fc-999">작성일</span>
+                            <span th:text="${#temporals.format(notice.registeredAt, 'yyyy-MM-dd HH:mm')}">2025-01-01 00:00</span>
+                        </div>
+                        <div class="pack-down col">
+                            <span class="fs-ss fc-999">노출</span>
+                            <span th:text="${notice.isShow} ? 'Y' : 'N'">Y</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 본문 -->
+                <div class="pack-down gap-12" style="margin-top: 8px;">
+                    <span class="fs-ss fc-999">내용</span>
+                    <div class="content-area" th:utext="${notice.body}">
+                        Content
+                    </div>
+                </div>
+
+                <!-- 첨부파일 -->
+                <section class="pack-down" style="margin-top: 16px;">
+                    <div class="pack-both">
+                        <h3 class="fs-lg fw-600">첨부파일</h3>
+                    </div>
+                    <table class="data-table" th:if="${attachments != null and !attachments.isEmpty()}">
+                        <thead>
+                        <tr>
+                            <th scope="col">파일명</th>
+                            <th scope="col" style="width:120px;">관리</th>
+                        </tr>
+                        </thead>
+                        <tbody>
+                        <tr th:each="attachment : ${attachments}">
+                            <td>
+                                <a th:href="${attachment.url}" target="_blank"
+                                   th:text="${attachment.originalFilename}">첨부파일명</a>
+                            </td>
+                            <td>
+                                <button type="button"
+                                        class="btn small bdr-gray"
+                                        th:onclick="deleteAttachment([[${attachment.id}]])">
+                                    삭제
+                                </button>
+                            </td>
+                        </tr>
+                        </tbody>
+                    </table>
+                    <div class="fc-999 fs-sm" th:if="${attachments == null or attachments.isEmpty()}">첨부파일이 없습니다.</div>
+                </section>
+
+                <!-- 액션 버튼 -->
+                <div class="button-area pack-both" style="margin-top: 20px;">
+                    <div class="pack-left">
+                        <a th:href="@{/notice/delete/{id}(id=${notice.id})}" class="btn medium bdr-color1">삭제</a>
+                        <a th:href="@{/notice/modify/{id}(id=${notice.id})}" class="btn medium color1">수정</a>
+                    </div>
+                </div>
+            </div><!-- //.box-wrap -->
+
+            <!-- 하단 버튼 (목록 이동) -->
+            <div class="button-area pack-both">
+                <a th:href="@{/notice/list}" class="btn medium color1">목록</a>
+                <a th:href="@{/notice/write}" class="btn medium color2">게시물작성</a>
+            </div>
+        </main>
+
+        <div th:replace="~{fragments/footer :: footer}"></div>
+    </div><!-- // #container -->
+</div><!-- // #wrap -->
+
+<!-- 첨부 삭제: context-path 안전 처리 -->
+<script th:inline="javascript">
+    function deleteAttachment(id) {
+        const formData = new FormData();
+        formData.append("id", id);
+
+        fetch(/*[[ @{/API/notice/delete/attachment} ]]*/ '', {
+            method: "POST",
+            body: formData
+        })
+        .then(async (response) => {
+            const data = await response.json();
+            if (!response.ok) throw new Error("서버 검증 오류");
+            if (data && data.success) {
+                window.location.href = /*[[ @{/notice/detail/{id}(id=${notice.id})} ]]*/ '';
+            }
+        })
+        .catch(err => console.error("에러 발생:", err));
+    }
+</script>
+</body>
+</html>

@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="format-detection" content="telephone=no">
+    <meta name="viewport"
+          content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <meta name="robots" content="noindex">
+    <meta name="googlebot" content="noindex">
+    <title>가맹점 목록</title>
+
+    <!-- Bootstrap CSS CDN -->
+    <th:block th:replace="~{fragments/head :: commonHead}"></th:block>
+    <link href="/admin/css/toast.css" rel="stylesheet"/>
+    <script src="/admin/js/lib/jquery-3.2.1.min.js"></script>
+    <script src="/admin/js/toast.js"></script>
+</head>
+<body class="scroll-up">
+<div id="wrap" class="frame">
+    <div th:replace="~{fragments/header :: header}"></div>
+
+    <div id="container" class="container">
+        <div class="title-bar">
+            <h2 class="page-title ellipsis">가맹점 목록</h2>
+        </div>
+
+        <main id="content">
+            <div class="row-4">
+                <div class="col box-wrap">
+                    <div>전체 가맹점</div>
+                    <div th:text="${#numbers.formatInteger(totalStore, 0, 'COMMA')} + '개'">0개</div>
+                    <div>등록된 모든 가맹점</div>
+                </div>
+
+                <div class="col box-wrap">
+                    <div>운영 가맹점</div>
+                    <div th:text="${#numbers.formatInteger(activeStore, 0, 'COMMA')} + '개'">0개</div>
+                    <div>정상 운영중인 점포</div>
+                </div>
+
+                <div class="col box-wrap">
+                    <div>평균 월매출</div>
+                    <!-- BigDecimal 포맷: 천단위 콤마, 소수 0자리 -->
+                    <div th:text="${#numbers.formatDecimal(avgMonthlySales, 0, 'COMMA', 0, 'POINT')} + '원'">0원</div>
+                    <div>운영점포 평균</div>
+                </div>
+
+                <div class="col box-wrap">
+                    <div>총 직원수</div>
+                    <div th:text="${#numbers.formatInteger(totalStaff, 0, 'COMMA')} + '명'">0명</div>
+                    <div>전체 가맹점 직원</div>
+                </div>
+            </div>
+
+            <div class="box-wrap">
+                <div id="search" class="search">
+                    <form th:action="@{/store/list}" method="get" th:object="${storeSearchDTO}">
+                        <fieldset>
+                            <legend class="blind">검색</legend>
+                            <div class="pack-both">
+                                <div class="pack-left">
+                                    <input type="text" id="searchTxt" class="input-text medium form-control"
+                                           th:field="*{keyword}" title="검색어" placeholder="가맹점번호, 가맹점명으로 검색..">
+                                    <button type="submit" class="btn medium color1">검색</button>
+                                    <button type="button"
+                                            class="btn medium bdr-color1"
+                                            th:onclick="|location.href='@{/store/list}'|">초기화
+                                    </button>
+                                </div>
+
+                                <div class="pack-left">
+                                    <!-- 가맹점 상태 필터 -->
+                                    <div class="btn medium bdr-color1 btn-group btn-group-toggle"
+                                         data-bs-toggle="buttons">
+                                        <label class="btn medium"
+                                               th:classappend="${storeSearchDTO.status == null or storeSearchDTO.status == ''} ? ' active' : ''">
+                                            <input type="radio" name="status" value=""
+                                                   th:checked="${storeSearchDTO.status == null}"
+                                                   onclick="setFilter('')">전체
+                                        </label>
+
+                                        <label class="btn medium"
+                                               th:classappend="${storeSearchDTO.status?.name() == 'OPERATING'} ? ' active' : ''">
+                                            <input type="radio" name="status" value="OPERATING"
+                                                   th:checked="${storeSearchDTO.status?.name() == 'OPERATING'}"
+                                                   onclick="setFilter('OPERATING')">운영중
+                                        </label>
+
+                                        <label class="btn medium"
+                                               th:classappend="${storeSearchDTO.status?.name() == 'PREPARING'} ? ' active' : ''">
+                                            <input type="radio" name="status" value="PREPARING"
+                                                   th:checked="${storeSearchDTO.status?.name() == 'PREPARING'}"
+                                                   onclick="setFilter('PREPARING')">개점준비
+                                        </label>
+
+                                        <label class="btn medium"
+                                               th:classappend="${storeSearchDTO.status?.name() == 'CLOSED'} ? ' active' : ''">
+                                            <input type="radio" name="status" value="CLOSED"
+                                                   th:checked="${storeSearchDTO.status?.name() == 'CLOSED'}"
+                                                   onclick="setFilter('CLOSED')">폐점
+                                        </label>
+                                    </div>
+
+                                    <!-- 페이지 사이즈 -->
+                                    <div class="pack-left page-size">
+                                        <select title="뷰사이즈" th:field="${storeSearchDTO.size}" class="select medium"
+                                                onchange="setPageSize(this.value)">
+                                            <option value="10">10</option>
+                                            <option value="30">30</option>
+                                            <option value="50">50</option>
+                                            <option value="100">100</option>
+                                        </select>
+                                        <span class="fs-ss">개씩 보기</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </fieldset>
+                    </form>
+                </div>
+
+                <div class="list-header pack-both" style="margin-top:16px;">
+                    <div class="pack-left">
+                        <a th:href="@{/store/write}" class="btn medium color2">+ 가맹점 등록</a>
+                    </div>
+                </div>
+
+                <section class="box-wrap">
+                    <table class="data-table">
+                        <thead>
+                        <tr>
+                            <th>매장번호</th>
+                            <th>매장명</th>
+                            <th>운영상태</th>
+                            <th>점주명</th>
+                            <th>연락처</th>
+                            <th>월매출</th>
+                            <th>직원수</th>
+                            <th>관리</th>
+                        </tr>
+                        </thead>
+                        <tbody>
+                        <tr th:each="row, idx : ${store.content}">
+                            <td th:text="${row.storeId}">매장번호</td>
+                            <td th:text="${row.storeName}">매장명</td>
+                            <td>
+                              <span th:class="|badge rounded-pill ${
+                                  row.storeStatus != null && row.storeStatus.name() == 'OPERATING' ? 'bg-success' :
+                                  (row.storeStatus != null && row.storeStatus.name() == 'PREPARING' ? 'bg-warning' :
+                                  (row.storeStatus != null && row.storeStatus.name() == 'CLOSED' ? 'bg-secondary' : 'bg-light text-dark')) }|"
+                                    th:text="${row.storeStatus != null ? row.storeStatus.description : '미지정'}">
+                              </span>
+                            </td>
+
+                            <td th:text="${row.staffName}">점주명</td>
+                            <td th:text="${row.storePhone}">연락처</td>
+                            <td th:text="${row.storeMonthlySales != null ?
+                                #numbers.formatInteger(row.storeMonthlySales / 10000, 0, 'COMMA') + '만 원' : '-'}">월매출</td>
+                            <td th:text="${row.storeTotalEmployees}">직원수</td>
+                            <td>
+                                <a th:href="@{/store/detail/{id}(id=${row.storeId})}" class="btn small normal">
+                                    <span class="material-symbols-outlined md-18">visibility</span>
+                                </a>
+                            </td>
+                        </tr>
+                        </tbody>
+                    </table>
+                    <div th:replace="~{fragments/pagination :: pagination2(${store}, 'page')}"></div>
+                </section>
+            </div>
+        </main>
+        <div th:replace="~{fragments/footer :: footer}"></div>
+    </div><!-- // #container  -->
+</div><!-- // #wrap  -->
+<script>
+    // 상태 필터 변경
+    window.setFilter = function (status) {
+      const url = new URL(window.location.href);
+
+      // status 파라미터 설정/제거
+      if (status === undefined || status === null || status === '') {
+        url.searchParams.delete('status');
+      } else {
+        url.searchParams.set('status', status);
+      }
+
+      // 페이지는 1로 초기화
+      url.searchParams.set('page', '1');
+
+      const qs = url.searchParams.toString();
+      window.location.href = url.pathname + (qs ? '?' + qs : '');
+    };
+
+    // 페이지 사이즈 변경
+    window.setPageSize = function (size) {
+      const url = new URL(window.location.href);
+      if (size) url.searchParams.set('size', size);
+      url.searchParams.set('page', '1');
+
+      const qs = url.searchParams.toString();
+      window.location.href = url.pathname + (qs ? '?' + qs : '');
+    };
+</script>
+
+</body>
+</html>

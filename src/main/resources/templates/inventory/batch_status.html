@@ -1,0 +1,212 @@
+<!doctype html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="format-detection" content="telephone=no">
+    <meta name="viewport"
+          content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+    <meta name="robots" content="noindex">
+    <meta name="googlebot" content="noindex">
+    <!-- Bootstrap CSS CDN -->
+    <th:block th:replace="~{fragments/head :: commonHead}"></th:block>
+
+    <link href="/admin/css/toast.css" rel="stylesheet"/>
+    <script src="/admin/js/lib/jquery-3.2.1.min.js"></script>
+    <script src="/admin/js/toast.js"></script>
+    <script src="/admin/js/excel-download.js" defer></script>
+</head>
+<body>
+<div id="wrap" class="frame">
+    <div th:replace="~{fragments/header :: header}"></div>
+
+    <div id="container" class="container" th:data-material-id="${materialId}">
+        <div class="title-bar">
+            <h2 class="page-title ellipsis max-1132">
+                <span class="fw-400">LOT 현황(배치 스냅샷) &gt;</span>
+                <span th:text="${materialName}">재료명 </span>
+                <span class="fw-400">현재 보유 LOT</span>
+            </h2>
+        </div>
+
+        <main id="content" class="max-1132">
+            <div class="pack-both">
+                <a th:href="@{/inventory/log/{mid}(mid=${materialId})}" class="btn medium bdr-color1">재고 로그</a>
+                <a th:href="@{/inventory/list}" class="btn medium bdr-color1">재고 목록</a>
+            </div>
+
+            <div class="box-wrap">
+                <div class="list-header pack-both">
+                    <div class="pack-left"></div>
+
+                    <div class="pack-left">
+                        <button type="button" class="btn medium bdr-color2"
+                                th:attr="data-excel-endpoint=@{'/API/inventory/' + ${materialId} + '/batch-status/download'}"
+                                onclick="excelDownload(this)">엑셀다운로드</button>
+
+                    </div>
+                </div>
+                <section class="pack-down">
+                    <table class="data-table" id="batchTable">
+                        <thead>
+                            <tr>
+                                <th scope="col">LOT 번호</th>
+                                <th scope="col">입고일</th>
+                                <th scope="col">유통기한</th>
+                                <th scope="col">입고수량</th>
+                                <th scope="col">잔량</th>
+                                <th scope="col">입고단가</th>
+                                <th scope="col">상세</th>
+                            </tr>
+                        </thead>
+                        <tbody id="batchTbody">
+                            <tr th:if="${#lists.isEmpty(batches)}">
+                                <td colspan="7">현재 보유 LOT가 없습니다.</td>
+                            </tr>
+                            <tr th:each="b: ${batches}">
+                                <td data-th="LOT 번호" class="fs-s" th:text="${b.lotNo}"></td>
+                                <td data-th="입고일" class="fs-s" th:text="${#temporals.format(b.receivedDate,'yyyy-MM-dd HH:mm')}"></td>
+                                <td data-th="유통기한" class="fs-s" th:text="${b.expirationDate != null ? #temporals.format(b.expirationDate,'yyyy-MM-dd') : '-'}"></td>
+                                <td data-th="입고수량" th:text="${#numbers.formatInteger(b.receivedQuantity,1,'COMMA')}" class="ta-r"></td>
+                                <td data-th="잔량" th:text="${#numbers.formatInteger(b.quantity,1,'COMMA')}" class="ta-r"></td>
+                                <td data-th="입고단가" th:text="${#numbers.formatInteger(b.unitPrice,1,'COMMA')}" class="ta-r"></td>
+                                <td data-th="버튼">
+                                    <button type="button"
+                                            class="btn small bdr-gray js-lot-out-history"
+                                            th:attr="data-batch-id=${b.id},data-lot-no=${b.lotNo}"
+                                            onclick="modalOpen('#detailModal');" title="출고 내역">
+                                        <span class="material-symbols-outlined md-18">conveyor_belt</span>
+                                    </button>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </section>
+            </div><!--//.box-wrap-->
+            <div class="button-area pack-both">
+                <a href="/admin/inventory/list" class="btn medium color1">목록</a>
+            </div>
+        </main>
+        <div th:replace="~{fragments/footer :: footer}"></div>
+    </div><!-- // #container  -->
+</div><!--#wrap.frame-->
+<!-- LOT 출고 이력 상세 모달 -->
+<div id="detailModal" class="overlay">
+    <div class="popup">
+        <div class="popup-header">
+            <h2 class="popup-title">
+                <span id="lotOutTitle">로트별 출고 내역</span>
+            </h2>
+            <button type="button" class="btn transparent pop-close"
+                    onclick="modalClose('#detailModal');" title="팝업 닫기">
+                <svg viewBox="0 0 32 32" class="ico svg-close">
+                    <path fill-rule="evenodd" clip-rule="evenodd"
+                          d="m16 17.414 8.485 8.485 1.415-1.414L17.414 16 25.9 7.515 24.485 6.1 16 14.586 7.515 6.1 6.1 7.515 14.586 16l-8.485 8.485L7.515 25.9 16 17.413z" />
+                </svg>
+            </button>
+        </div>
+
+        <div class="popup-body">
+            <div class="pack-down">
+                <table class="data-table">
+                    <thead>
+                    <tr>
+                        <th scope="col">출고일시</th>
+                        <th scope="col">가맹점</th>
+                        <th scope="col">출고 수량</th>
+                        <th scope="col">메모</th>
+                    </tr>
+                    </thead>
+                    <tbody id="lotOutTbody">
+                    <tr>
+                        <td colspan="4">출고 이력을 불러오는 중입니다.</td>
+                    </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+<!-- LOT 출고 이력 상세 모달 -->
+<script>
+    // LOT 출고 내역 로딩
+    function openOutHistoryModal(el) {
+      var batchId = el.getAttribute('data-batch-id');
+      var lotNo = el.getAttribute('data-lot-no') || '';
+
+      var titleEl = document.getElementById('lotOutTitle');
+      var tbody = document.getElementById('lotOutTbody');
+
+      // 제목에 로트 번호 표시
+      titleEl.textContent = lotNo ? (lotNo) : '로트별 출고 내역';
+
+      // 초기 상태
+      tbody.innerHTML = '<tr><td colspan="4">출고 이력을 불러오는 중입니다.</td></tr>';
+
+      // /admin/inventory/lot/{batchId}/out-history 호출
+      api.get('/admin/inventory/lot/' + batchId + '/out-history', {
+        params: { page: 0, size: 50 }
+      }).then(function (res) {
+        var page = res.data;
+        var rows = page && page.content ? page.content : [];
+
+        if (!rows.length) {
+          tbody.innerHTML = '<tr><td colspan="4">출고 이력이 없습니다.</td></tr>';
+          return;
+        }
+
+        tbody.innerHTML = '';
+
+        rows.forEach(function (row) {
+          var tr = document.createElement('tr');
+
+          // 날짜
+          var dateTd = document.createElement('td');
+          dateTd.setAttribute('data-th', '출고일시');
+          dateTd.className = 'fs-s';
+          dateTd.textContent = row.outDate || row.logDate || '';
+          tr.appendChild(dateTd);
+
+          // 가맹점명
+          var storeTd = document.createElement('td');
+          storeTd.setAttribute('data-th', '가맹점');
+          storeTd.textContent = row.storeName || '-';
+          tr.appendChild(storeTd);
+
+          // 출고 수량 (여러 필드명 fallback)
+          var qtyTd = document.createElement('td');
+          qtyTd.setAttribute('data-th', '출고 수량');
+          qtyTd.className = 'ta-r';
+          var qtyVal =
+                  (row.quantity !== undefined && row.quantity !== null) ? row.quantity :
+                  (row.qty !== undefined && row.qty !== null) ? row.qty :
+                  (row.outQuantity !== undefined && row.outQuantity !== null) ? row.outQuantity :
+                  (row.outQty !== undefined && row.outQty !== null) ? row.outQty :
+                  '';
+          qtyTd.textContent = qtyVal;
+          tr.appendChild(qtyTd);
+
+          // 메모
+          var memoTd = document.createElement('td');
+          memoTd.setAttribute('data-th', '메모');
+          memoTd.className = 'fs-s';
+          memoTd.textContent = row.memo || '';
+          tr.appendChild(memoTd);
+
+          tbody.appendChild(tr);
+        });
+      }).catch(function (err) {
+        console.error(err);
+        tbody.innerHTML = '<tr><td colspan="4">출고 내역을 불러오는 중 오류가 발생했습니다.</td></tr>';
+      });
+    }
+
+    // log 템플릿과 동일하게: modalOpen + 데이터 로딩
+    $(function () {
+      $('#batchTable').on('click', '.js-lot-out-history', function () {
+        openOutHistoryModal(this);
+      });
+    });
+</script>
+</body>
+</html>

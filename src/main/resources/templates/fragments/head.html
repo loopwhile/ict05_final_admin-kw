@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:fragment="commonHead">
+    <meta charset="UTF-8">
+
+    <!-- CSRF 메타 (스프링이 주입) -->
+    <meta name="_csrf" th:content="${_csrf.token}">
+    <meta name="_csrf_header" th:content="${_csrf.headerName}">
+    <!--FCM-->
+    <meta name="vapid-key" th:content="${@environment.getProperty('firebase.web.vapid-key')}">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" />
+
+    <!-- 기존 전역 axios 설정(수정 금지) -->
+<!--    <script src="/admin/js/axios-common.js" defer></script>-->
+    <script src="https://cdn.jsdelivr.net/npm/axios@1.7.7/dist/axios.min.js" defer></script>
+    <!-- 새 CSRF 전용 스크립트 -->
+    <script th:src="@{/js/csrf-attach.js}" defer></script>
+    <!--FCM-->
+    <!-- Firebase Configuration Properties (injected via Thymeleaf) -->
+    <script th:inline="javascript">
+        /*<![CDATA[*/
+        window.firebaseConfig = {
+            apiKey: /*[[${@environment.getProperty('firebase.api-key')}]]*/ 'YOUR_API_KEY',
+            authDomain: /*[[${@environment.getProperty('firebase.auth-domain')}]]*/ 'YOUR_AUTH_DOMAIN',
+            projectId: /*[[${@environment.getProperty('firebase.project-id')}]]*/ 'YOUR_PROJECT_ID',
+            storageBucket: /*[[${@environment.getProperty('firebase.storage-bucket')}]]*/ 'YOUR_STORAGE_BUCKET',
+            messagingSenderId: /*[[${@environment.getProperty('firebase.messaging-sender-id')}]]*/ 'YOUR_MESSAGING_SENDER_ID',
+            appId: /*[[${@environment.getProperty('firebase.app-id')}]]*/ 'YOUR_APP_ID',
+            measurementId: /*[[${@environment.getProperty('firebase.measurement-id')}]]*/ 'YOUR_MEASUREMENT_ID'
+        };
+        /*]]>*/
+    </script>
+    <!--FCM-->
+    <script type="module">
+        // Import the functions you need from the SDKs you need
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js";
+        import { getMessaging } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-messaging-compat.js";
+        // import { getAnalytics } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-analytics.js";
+    </script>
+</head>
+</html>

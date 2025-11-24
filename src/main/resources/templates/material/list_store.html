@@ -1,0 +1,174 @@
+<!doctype html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="format-detection" content="telephone=no">
+    <meta name="viewport"
+          content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+    <meta name="robots" content="noindex">
+    <meta name="googlebot" content="noindex">
+    <!-- Bootstrap CSS CDN -->
+    <th:block th:replace="~{fragments/head :: commonHead}"></th:block>
+
+    <link href="/admin/css/toast.css" rel="stylesheet"/>
+    <script src="/admin/js/lib/jquery-3.2.1.min.js"></script>
+    <script src="/admin/js/toast.js"></script>
+    <script src="/admin/js/excel-download.js" defer></script>
+</head>
+<body>
+<div id="wrap" class="frame">
+<div th:replace="~{fragments/header :: header}"></div>
+
+    <div id="container" class="container">
+        <div class="title-bar">
+            <div class="pack-both">
+                <div class="pack-left gap-8">
+                    <select title="가맹점 선택" class="select large" style="width: 120px;"
+                            id="storeSelect" onchange="onStoreChange(this.value)">
+                        <option value="">전가맹점</option>
+                        <option th:each="store : ${stores}"
+                                th:value="${store.storeId}"
+                                th:text="${store.storeName}"
+                                th:selected="${storeMaterialSearchDTO.storeId == store.storeId}">
+                        </option>
+                    </select>
+                    <h2 class="page-title ellipsis">재료 목록</h2>
+                </div>
+
+                <a href="/admin/material/list" class="btn medium color2">본사 재료 목록</a>
+            </div>
+        </div>
+
+        <main id="content">
+            <div class="box-wrap">
+                <div id="search" class="search">
+                    <form name="frm" id="frm" method="get">
+                        <fieldset>
+                            <legend class="blind">검색</legend>
+                            <div class="pack-both">
+                                <div class="pack-left">
+                                    <input type="hidden" name="type" th:value="${storeMaterialSearchDTO.type}" />
+                                    <input type="hidden" name="size" th:value="${storeMaterialSearchDTO.size}" />
+
+                                    <input title="검색어" type="search" name="s"
+                                           th:value="${storeMaterialSearchDTO.s}"
+                                           class="input-text medium form-control"
+                                           placeholder="재료명, 카테고리 검색" />
+                                    <input type="submit" value="검색" class="btn medium color1"/>
+                                </div>
+
+                                <div class="pack-left">
+                                    <!-- 상태 필터 -->
+                                    <div class="btn medium bdr-color1 btn-group btn-group-toggle" data-bs-toggle="buttons">
+                                        <label class="btn medium"
+                                               th:classappend="${storeMaterialSearchDTO.status == null or storeMaterialSearchDTO.status == ''} ? ' active' : ''">
+                                            <input type="radio" name="status" value=""
+                                                   th:checked="${storeMaterialSearchDTO.status == null}"
+                                                   onclick="setFilter('')">전체
+                                        </label>
+
+                                        <label class="btn medium"
+                                               th:classappend="${storeMaterialSearchDTO.status?.name() == 'USE'} ? ' active' : ''">
+                                            <input type="radio" name="status" value="USE"
+                                                   th:checked="${storeMaterialSearchDTO.status?.name() == 'USE'}"
+                                                   onclick="setFilter('USE')">사용중
+                                        </label>
+
+                                        <label class="btn medium"
+                                               th:classappend="${storeMaterialSearchDTO.status?.name() == 'STOP'} ? ' active' : ''">
+                                            <input type="radio" name="status" value="STOP"
+                                                   th:checked="${storeMaterialSearchDTO.status?.name() == 'STOP'}"
+                                                   onclick="setFilter('STOP')">중단
+                                        </label>
+                                    </div>
+
+                                    <!-- 페이지 사이즈 -->
+                                    <div class="pack-left page-size">
+                                        <select title="뷰사이즈" th:field="${storeMaterialSearchDTO.size}" class="select medium"
+                                                onchange="setPageSize(this.value)">
+                                            <option value="10">10</option>
+                                            <option value="30">30</option>
+                                            <option value="50">50</option>
+                                            <option value="100">100</option>
+                                        </select>
+                                        <span class="fs-ss">개씩 보기</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </fieldset>
+                    </form>
+                </div>
+
+                <section class="pack-down">
+                    <div class="list-header pack-both">
+                        <div class="pack-left"></div>
+
+                        <div class="pack-left">
+                            <button type="button" class="btn medium bdr-color2"
+                                    data-excel-endpoint="/API/store/material/download"
+                                    data-store-id="[[${storeId}]]"
+                                    data-form-id="frm"
+                                    onclick="excelDownload(this)">엑셀다운로드</button>
+                        </div>
+                    </div>
+
+                    <table class="data-table">
+                        <thead>
+                        <tr>
+                            <th scope="col">CODE</th>
+                            <th scope="col">구분</th>
+                            <th scope="col">재료명</th>
+                            <th scope="col">단위</th>
+                            <th scope="col">공급업체</th>
+                            <th scope="col">상태</th>
+                        </tr>
+                        </thead>
+                        <tbody>
+                        <tr th:each="material, stat : ${storeMaterials.content}">
+                            <td th:text="${material.code}">CODE</td>
+                            <td th:text="${material.hqMaterial ? '본사' : '가맹점'}"></td>
+                            <td>
+                                <span class="fc-333 fw-600" th:text="${material.name}">재료명</span>
+                            </td>
+                            <td th:text="${material.baseUnit}">단위</td>
+                            <td th:text="${material.hqMaterial ? '본사' : material.supplier}"></td>
+                            <td>
+                                <span th:class="'badge rounded-pill ' + (${material.status.name()} == 'USE' ? 'bg-primary' : '  bg-secondary')" th:text="${material.status.description}">상태</span>
+                            </td>
+                        </tr>
+                        </tbody>
+                    </table>
+                    <div style="text-align: center;">
+                        <div th:replace="~{fragments/pagination :: pagination (${storeMaterials})}"></div>
+                    </div>
+                </section>
+            </div>
+        </main>
+    <div th:replace="~{fragments/footer :: footer}"></div>
+</div><!-- // #container  -->
+</div><!--#wrap.frame-->
+
+<script>
+    function onStoreChange(storeId) {
+        if (!storeId) {
+            window.location = "/admin/material/store/list";
+            return;
+        }
+        // 기존 검색어나 상태 필터 초기화
+        window.location = `/admin/material/store/list?storeId=${storeId}`;
+    }
+
+    function setFilter(status, path){
+        const p=new URLSearchParams(location.search);
+        p.set('status',status||'');
+        location.href=(path||location.pathname)+'?'+p;
+    }
+    function setPageSize(size, path){
+        const p=new URLSearchParams(location.search);
+        p.delete('page');p.set('size',size);
+        location.href=(path||location.pathname)+'?'+p;
+    }
+</script>
+</body>
+</html>

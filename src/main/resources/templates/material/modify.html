@@ -1,0 +1,202 @@
+<!doctype html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="format-detection" content="telephone=no">
+    <meta name="viewport"
+          content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+    <meta name="robots" content="noindex">
+    <meta name="googlebot" content="noindex">
+    <!-- Bootstrap CSS CDN -->
+    <th:block th:replace="~{fragments/head :: commonHead}"></th:block>
+
+    <link href="/admin/css/toast.css" rel="stylesheet"/>
+    <script src="/admin/js/lib/jquery-3.2.1.min.js"></script>
+    <script src="/admin/js/toast.js"></script>
+</head>
+<body>
+<div id="wrap" class="frame">
+<div th:replace="~{fragments/header :: header}"></div>
+
+    <div id="container" class="container">
+        <div class="title-bar">
+            <h2 class="page-title ellipsis max-1132">
+                <span th:text="${material.name}">재료명</span> 수정
+            </h2>
+        </div>
+
+        <main id="content" class="max-1132">
+            <div class="write-form box-wrap">
+                <form name="frm" id="frm" method="post" enctype="multipart/form-data">
+                    <input type="hidden" name="id" th:value="${material.id}">
+
+                    <fieldset class="pack-down gap-12">
+                        <div class="pack-down gap-20">
+                            <div class="pack-down col">
+                                <label class="fs-ss fc-999" for="materialName">재료명 *</label>
+                                <input type="text" id="materialName" class="input-text large"
+                                       name="name"
+                                       th:value="${material.name}"
+                                       title="재료명" placeholder="재료명 입력" />
+                            </div>
+
+                            <div class="row col-3">
+                                <div class="pack-down col">
+                                    <span class="fs-ss fc-999">ID</span>
+                                    <span th:text="${material.id}">ID</span>
+                                </div>
+
+                                <div class="pack-down col">
+                                    <span class="fs-ss fc-999">code</span>
+                                    <span th:text="${material.code}">code</span>
+                                </div>
+
+                                <div class="pack-down col">
+                                    <label class="fs-ss fc-999" for="materialCategory">카테고리</label>
+
+                                    <select name="materialCategory" id="materialCategory" class="select medium">
+                                        <option>선택</option>
+                                        <option th:each="c : ${MaterialCategory}"
+                                                th:value="${c.name()}"
+                                                th:text="${c.description}"
+                                                th:selected="${c == material.materialCategory}">
+                                            일반
+                                        </option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <div class="row col-3">
+                                <div class="pack-down col">
+                                    <label class="fs-ss fc-999" for="materialBaseUnit">기본단위(소진단위, cf.g/kg/ea)</label>
+                                    <input type="text" name="baseUnit" id="materialBaseUnit" class="input-text medium"
+                                           th:value="${material.baseUnit}"
+                                           title="기본단위" placeholder="기본단위 입력" />
+                                </div>
+                                <div class="pack-down col">
+                                    <label class="fs-ss fc-999" for="materialSalesUnit">판매단위(cf.g/kg/ea/box)</label>
+                                    <input type="text" name="salesUnit" id="materialSalesUnit" class="input-text medium"
+                                           th:value="${material.salesUnit}"
+                                           title="판매단위" placeholder="판매단위 입력" />
+                                </div>
+                                <div class="pack-down col">
+                                    <label class="fs-ss fc-999" for="materialRate">변환비율(판매단위/기본단위)</label>
+                                    <input type="text" name="conversionRate" id="materialRate" class="input-text medium"
+                                           th:value="${material.conversionRate}"
+                                           title="변환비율" placeholder="변환비율 입력" />
+                                </div>
+                            </div>
+
+                            <div class="row col-3">
+                                <div class="pack-down col">
+                                    <label class="fs-ss fc-999" for="materialOptimalQuantity">적정 수량</label>
+                                    <input type="number" step="0.001" inputmode="decimal"
+                                           name="optimalQuantity" id="materialOptimalQuantity"
+                                           class="input-text medium"
+                                           th:value="${material.optimalQuantity}"
+                                           title="적정 수량" placeholder="적정 수량 입력" />
+                                    <p id="optimalQuantityError" class="warning"></p>
+                                </div>
+
+                                <div class="pack-down col">
+                                    <label class="fs-ss fc-999" for="supplier">공급업체명</label>
+                                    <input type="text" name="supplier" id="supplier" class="input-text medium"
+                                           th:value="${material.supplier}"
+                                           title="공급업체명" placeholder="공급업체명 입력" />
+                                </div>
+
+                                <div class="pack-down col">
+                                    <label class="fs-ss fc-999" for="materialTemperature">보관온도</label>
+                                    <select name="materialTemperature" id="materialTemperature" class="select medium">
+                                        <option value="">보관온도 선택</option>
+                                        <option th:each="t : ${MaterialTemperature}"
+                                                th:value="${t.name()}"
+                                                th:text="${t.description}"
+                                                th:selected="${t == material.materialTemperature}">
+                                            보관온도
+                                        </option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <div class="row col-3">
+                                <div class="pack-down col">
+                                    <span class="fs-ss fc-999" for="materialTemperature">재료 상태(사용 여부)</span>
+                                    <div class="pack-down">
+                                        <div class="select-options r4">
+                                            <label th:each="s : ${MaterialStatus}">
+                                                <input type="radio"
+                                                       name="materialStatus"
+                                                       th:value="${s}"
+                                                       th:checked="${s == material.materialStatus}">
+                                                <span class="btn medium r4"
+                                                      th:text="${s.description}">상태</span>
+                                            </label>
+                                        </div><!-- // .select-options -->
+                                        <p id="materialStatusError" class="warning"></p>
+                                    </div>
+                                </div>
+                                <div class="pack-down col">&nbsp;</div>
+                                <div class="pack-down col">&nbsp;</div>
+                            </div>
+                        </div><!--pack-down.gap-12-->
+
+                        <div class="button-area pack-center">
+                            <button type="submit" class="btn large color1">저장</button>
+                        </div>
+                    </fieldset>
+                </form>
+            </div><!--.write-form.box-wrap -->
+            <div class="button-area pack-both">
+                <a href="/admin/material/list" class="btn medium color1">목록</a>
+            </div>
+        </main>
+    <div th:replace="~{fragments/footer :: footer}"></div>
+</div><!-- // #container  -->
+</div><!--#wrap.frame-->
+<script>
+    document.getElementById("frm").addEventListener("submit", function(e) {
+        e.preventDefault(); // 폼 기본 제출 막기
+
+        const formData = new FormData(this);
+
+        fetch("/admin/API/material/modify", {
+            method: "POST",
+            body: formData
+        })
+        .then(async (res) => {
+            const data = await res.json().catch(() => ({}));
+
+            // 기존 에러 표식 초기화
+            document.querySelectorAll(".warning").forEach(el => el.textContent = "");
+
+            if (!res.ok) {
+                // 서버 검증 에러 맵을 폼에 표시
+                if (data && data.errors) {
+                    Object.entries(data.errors).forEach(([field, msg]) => {
+                        const input = document.querySelector(`[name="${field}"]`);
+                        if (input) {
+                            // 필드 옆 warning이 있으면 그쪽에 출력
+                            const container = input.closest(".pack-down") || input.parentElement;
+                            const warn = container && container.querySelector(".warning");
+                            if (warn) warn.textContent = msg;
+                        }
+                    });
+                }
+                throw new Error("서버 응답 오류: " + res.status);
+            }
+
+            // 성공 처리
+            alert("수정 성공 : " + data.id);
+            window.location.href = "/admin/material/detail/" + data.id;
+        })
+        .catch((err) => {
+            console.error("에러 발생:", err);
+            // 여기서는 alert를 유지하되, 필드별 경고는 위에서 이미 표시됨
+        });
+
+    });
+</script>
+</body>
+</html>

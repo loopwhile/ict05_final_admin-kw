@@ -1,0 +1,250 @@
+<!DOCTYPE HTML>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="format-detection" content="telephone=no">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="viewport"
+          content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <meta name="robots" content="noindex">
+    <meta name="googlebot" content="noindex">
+    <title>토스트랩 관리자</title>
+
+    <th:block th:replace="~{fragments/head :: commonHead}"></th:block>
+
+    <!-- favicon -->
+    <link rel="icon" th:href="@{/images/logo/favi_ad.png}" type="image/x-icon"/>
+
+    <!-- CSS -->
+    <link rel="stylesheet" th:href="@{/css/toast.css}" />
+
+    <!-- JS -->
+    <script th:src="@{/js/lib/jquery-3.2.1.min.js}"></script>
+    <script th:src="@{/js/toast.js}"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        .wrap{padding:20px}
+        .grid4{display:grid;grid-template-columns:repeat(4,1fr);gap:16px}
+        .grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+        .card{background:#fff;border-radius:16px;box-shadow:0 8px 24px rgba(0,0,0,.06);padding:18px}
+        .num{font-size:28px;font-weight:700}
+        .hint{color:#777;font-size:12px}
+        .badge{display:inline-block;padding:2px 8px;border-radius:999px;font-size:12px}
+        .up{background:#e6f4ea;color:#137333}
+        .down{background:#fce8e6;color:#a50e0e}
+        .title{font-size:14px;color:#666;margin-bottom:6px}
+        .panel{background:#fff;border-radius:16px;box-shadow:0 8px 24px rgba(0,0,0,.06);padding:16px}
+        .row{display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px solid #f1f3f5}
+        .iconBubble{width:48px;height:48px;border-radius:999px;background:rgba(255,255,255,.2);display:flex;align-items:center;justify-content:center}
+        .grad1{background:linear-gradient(135deg,#5b8cff,#5b8cffcc);color:#fff}
+        .grad2{background:linear-gradient(135deg,#34c759,#34c759cc);color:#fff}
+        .grad3{background:linear-gradient(135deg,#ff8a34,#ff8a34cc);color:#fff}
+        .grad4{background:linear-gradient(135deg,#8a5bff,#8a5bffcc);color:#fff}
+    </style>
+</head>
+<body>
+<div id="wrap" class="frame">
+    <div th:replace="~{fragments/header :: header}"></div>
+    <div id="container" class="container">
+        <div class="title-bar">
+            <h2 class="page-title ellipsis">대시보드</h2>
+        </div>
+
+        <main id="content">
+
+            <div class="row-4">
+                <div class="col box-wrap">
+                    <div class="title">이번달 매출</div>
+                    <div class="num" th:text="${#numbers.formatInteger(kpiRevenueThisMonth,0,'COMMA')} + ' 원'">0 원</div>
+                    <span class="badge" th:classappend="${kpiRevenueGrowthPct} >= 0 ? ' up' : ' down'"
+                          th:text="(${kpiRevenueGrowthPct} >= 0 ? '+' : '') + ${#numbers.formatDecimal(kpiRevenueGrowthPct,1,1)} + '%'">+0.0%</span>
+                </div>
+                <div class="col box-wrap">
+                    <div class="title">활성 매장</div>
+                    <div class="num" th:text="${#numbers.formatInteger(kpiActiveStores,0,'COMMA')} + ' 개'">0 개</div>
+                    <span class="hint">운영 중</span>
+                </div>
+                <div class="col box-wrap">
+                    <div class="title">주문 건수</div>
+                    <div class="num" th:text="${#numbers.formatInteger(kpiOrderCount,0,'COMMA')} + ' 건'">0 건</div>
+                    <span class="hint">월 누적</span>
+                </div>
+                <div class="col box-wrap">
+                    <div class="title">신규 매장</div>
+                    <div class="num" th:text="${#numbers.formatInteger(kpiNewStores,0,'COMMA')} + ' 개'">0 개</div>
+                    <span class="hint">이번달</span>
+                </div>
+            </div>
+
+
+            <!-- Charts -->
+            <section class="grid2" style="margin-top:16px">
+                <div class="panel">
+                    <h3 style="margin:0 0 8px 0;">가맹점 월별 매출 추이</h3>
+                    <div style="height:300px"><canvas id="salesChart"></canvas></div>
+                </div>
+                <div class="panel">
+                    <h3 style="margin:0 0 8px 0;">가맹점 주간 매출 현황</h3>
+                    <div style="height:300px"><canvas id="weeklyChart"></canvas></div>
+                </div>
+
+            </section>
+
+            <section class="grid2" style="margin-top:16px">
+                <div class="panel">
+                    <h3 style="margin:0 0 8px 0;">재료 매출 현황</h3>
+                    <div class="hint">최근 6개월 재료 매출 추이</div>
+                    <div style="height:300px"><canvas id="logiChart"></canvas></div>
+                </div>
+                <!-- Store table -->
+                <div class="panel">
+                    <h3 style="margin:0 0 8px 0;">매장별 매출 현황</h3>
+                    <div th:each="r : ${storeRows}" class="row">
+                        <div style="display:flex;align-items:center;gap:8px">
+                            <div style="width:8px;height:8px;border-radius:999px;background:#5b8cff"></div>
+                            <div th:text="${r.store}">매장명</div>
+                        </div>
+                        <div style="display:flex;align-items:center;gap:10px">
+                            <div th:text="${#numbers.formatInteger(r.revenue,0,'COMMA')} + ' 원'">0 원</div>
+                            <span class="badge" th:classappend="${r.growth} >= 0 ? ' up' : ' down'"
+                                  th:text="(${r.growth} >= 0 ? '+' : '') + ${#numbers.formatDecimal(r.growth,1,1)} + '%'">+0.0%</span>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </main>
+        <div th:replace="~{fragments/footer :: footer}"></div>
+    </div><!-- // #container  -->
+</div><!--#wrap.frame-->
+
+<!-- 서버값을 JS로 주입하고 Chart.js 그리기 -->
+<script th:inline="javascript">
+    /*<![CDATA[*/
+    const salesLabels  = /*[[${salesLabels}]]*/ ["1월","2월"];
+    const salesValues  = /*[[${salesValues}]]*/ [0,0];
+    const weeklyLabels = /*[[${weeklyLabels}]]*/ ["월","화"];
+    const weeklyValues = /*[[${weeklyValues}]]*/ [0,0];
+    const logiLabels   = /*[[${logiLabels}]]*/ ["1월","2월"];
+    const logiValues   = /*[[${logiValues}]]*/ [0,0];
+
+    const colors = { orange:'#fb6340', green:'#2dce89', purple:'#9966FF', grid:'rgba(0,0,0,0.06)' };
+
+    // 데이터 구간에 패딩을 준 y축 범위 계산
+    function paddedRange(arr, padPct = 0.08) {
+      const vals = (arr || []).map(Number).filter(Number.isFinite);
+      if (!vals.length) return {};
+      const lo = Math.min(...vals), hi = Math.max(...vals);
+      if (lo === hi) {
+        const pad = Math.max(1, hi * padPct);
+        return { suggestedMin: hi - pad, suggestedMax: hi + pad };
+      }
+      const span = hi - lo, pad = span * padPct;
+      return { suggestedMin: lo - pad, suggestedMax: hi + pad };
+    }
+
+    const common = {
+      responsive:true,
+      maintainAspectRatio:false,
+      plugins:{ legend:{ display:false }, tooltip:{ intersect:false, mode:'index' } },
+      scales:{ x:{ offset:true, grid:{ display:false } } }
+    };
+
+    // 1) 월별 매출
+    const yRangeSales = paddedRange(salesValues);
+    new Chart(document.getElementById('salesChart'),{
+      type:'line',
+      data:{
+        labels:salesLabels,
+        datasets:[{
+          data:salesValues,
+          borderColor:colors.orange,
+          backgroundColor:colors.orange + '20',
+          borderWidth:3, pointRadius:4, tension:0.35, fill:false
+        }]
+      },
+      options:{
+        ...common,
+        scales:{
+          ...common.scales,
+          y:{
+            beginAtZero:false,
+            ...yRangeSales,
+            grace:'5%',
+            grid:{ color:colors.grid },
+            ticks:{ callback:(v)=> new Intl.NumberFormat('ko-KR',{ notation:'compact' }).format(v) }
+          }
+        }
+      }
+    });
+
+    // 2) 주간 매출
+    const yRangeWeekly = paddedRange(weeklyValues);
+    new Chart(document.getElementById('weeklyChart'),{
+      type:'bar',
+      data:{
+        labels:weeklyLabels,
+        datasets:[{
+          data:weeklyValues,
+          backgroundColor:colors.green,
+          borderColor:colors.green,
+          borderWidth:1, borderRadius:6, borderSkipped:false
+        }]
+      },
+      options:{
+        ...common,
+        scales:{
+          ...common.scales,
+          y:{
+            beginAtZero:false,
+            ...yRangeWeekly,
+            grace:'5%',
+            grid:{ color:colors.grid },
+            ticks:{ callback:(v)=> new Intl.NumberFormat('ko-KR',{ notation:'compact' }).format(v) }
+          }
+        }
+      }
+    });
+
+    // 3) 물류 매출
+    const yRangeLogi = paddedRange(logiValues);
+    new Chart(document.getElementById('logiChart'),{
+      type:'bar',
+      data:{
+        labels:logiLabels,
+        datasets:[{
+          data:logiValues,
+          backgroundColor:colors.purple,
+          borderColor:colors.purple,
+          borderWidth:1, borderRadius:6, borderSkipped:false
+        }]
+      },
+      options:{
+        ...common,
+        plugins:{
+          ...common.plugins,
+          tooltip:{
+            callbacks:{ label:(ctx)=>{
+              const v = ctx.parsed.y ?? 0;
+              return new Intl.NumberFormat('ko-KR',{ style:'currency', currency:'KRW', minimumFractionDigits:0 }).format(v);
+            }}
+          }
+        },
+        scales:{
+          ...common.scales,
+          y:{
+            beginAtZero:false,
+            ...yRangeLogi,
+            grace:'5%',
+            grid:{ color:colors.grid },
+            ticks:{ callback:(v)=> new Intl.NumberFormat('ko-KR',{ notation:'compact' }).format(v) }
+          }
+        }
+      }
+    });
+    /*]]>*/
+</script>
+
+</body>
+</html>

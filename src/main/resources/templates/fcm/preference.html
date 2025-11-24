@@ -1,0 +1,143 @@
+<!doctype html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="format-detection" content="telephone=no">
+    <meta name="viewport"
+          content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <meta name="robots" content="noindex">
+    <meta name="googlebot" content="noindex">
+    <!-- Bootstrap CSS CDN -->
+    <th:block th:replace="~{fragments/head :: commonHead}"></th:block>
+
+    <link href="/admin/css/toast.css" rel="stylesheet"/>
+    <script src="/admin/js/lib/jquery-3.2.1.min.js"></script>
+    <script src="/admin/js/toast.js"></script>
+    <!-- FCM 관련 JS 파일 (Task 4에서 추가될 예정) -->
+    <script src="/admin/js/fcm/firebase-init.js"></script>
+</head>
+<body>
+<div id="wrap" class="frame">
+    <div th:replace="~{fragments/header :: header}"></div>
+
+    <div id="container" class="container">
+        <div class="title-bar">
+            <h2 class="page-title ellipsis">알림 설정</h2>
+        </div>
+
+        <main id="content" class="box-wrap">
+            <div class="write-form">
+                <form id="fcmPreferenceForm">
+                    <fieldset class="box-wrap pack-down">
+                        <h3 class="section-title">알림 수신 설정</h3>
+                        <hr>
+
+                        <div class="field pack-down">
+                            <span class="label medium">공지사항 알림</span>
+                            <div class="insert pack-down">
+                                <input type="checkbox" id="catNotice" name="catNotice" class="input-checkbox">
+                                <label for="catNotice">공지사항 업데이트 시 알림 받기</label>
+                            </div>
+                        </div>
+
+                        <div class="field pack-down">
+                            <span class="label medium">재고 부족 알림</span>
+                            <div class="insert pack-down">
+                                <input type="checkbox" id="catStockLow" name="catStockLow" class="input-checkbox">
+                                <label for="catStockLow">재고 부족 시 알림 받기</label>
+                            </div>
+                        </div>
+
+                        <div class="field pack-down">
+                            <span class="label medium">유통기한 임박 알림</span>
+                            <div class="insert pack-down">
+                                <input type="checkbox" id="catExpireSoon" name="catExpireSoon" class="input-checkbox">
+                                <label for="catExpireSoon">유통기한 임박 시 알림 받기</label>
+                            </div>
+                        </div>
+
+                        <div class="field pack-down">
+                            <span class="label medium">유통기한 임박 기준일</span>
+                            <div class="insert pack-down">
+                                <input type="number" id="thresholdDays" name="thresholdDays" class="input-text small" min="1" max="30">
+                                <span class="unit">일 전</span>
+                                <p class="help-text">유통기한 임박 알림을 받을 기준 일수를 설정합니다 (1~30일).</p>
+                            </div>
+                        </div>
+                    </fieldset>
+
+                    <fieldset class="row box-wrap">
+                        <div class="button-area pack-center">
+                            <button type="submit" class="btn large color1">설정 저장</button>
+                            <button type="button" class="btn large bdr-color1" onclick="location.reload()">취소</button>
+                        </div>
+                    </fieldset>
+                </form>
+            </div>
+        </main>
+        <div th:replace="~{fragments/footer :: footer}"></div>
+    </div><!-- // #container  -->
+</div><!--#wrap.frame-->
+<script th:inline="javascript">
+    /*<![CDATA[*/
+    $(document).ready(function() {
+        // 현재 설정 불러오기
+        $.ajax({
+            url: "/fcm/pref/me",
+            type: "GET",
+            success: function(data) {
+                $("#catNotice").prop("checked", data.catNotice);
+                $("#catStockLow").prop("checked", data.catStockLow);
+                $("#catExpireSoon").prop("checked", data.catExpireSoon);
+                $("#thresholdDays").val(data.thresholdDays);
+            },
+            error: function(xhr, status, error) {
+                console.error("Failed to load FCM preferences:", error);
+                showToast("알림 설정을 불러오는데 실패했습니다.", "error");
+            }
+        });
+
+        // 폼 제출 처리
+        $("#fcmPreferenceForm").on("submit", function(e) {
+            e.preventDefault();
+
+            const formData = {
+                catNotice: $("#catNotice").is(":checked"),
+                catStockLow: $("#catStockLow").is(":checked"),
+                catExpireSoon: $("#catExpireSoon").is(":checked"),
+                thresholdDays: parseInt($("#thresholdDays").val()),
+                applySubscriptions: true // 토픽 구독/해제 즉시 반영
+            };
+
+            $.ajax({
+                url: "/fcm/pref/me",
+                type: "POST",
+                contentType: "application/json",
+                data: JSON.stringify(formData),
+                success: function(response) {
+                    if (response.ok) {
+                        showToast("알림 설정이 성공적으로 저장되었습니다.", "success");
+                    } else {
+                        showToast("알림 설정 저장에 실패했습니다.", "error");
+                    }
+                },
+                error: function(xhr, status, error) {
+                    console.error("Failed to save FCM preferences:", error);
+                    showToast("알림 설정 저장 중 오류가 발생했습니다.", "error");
+                }
+            });
+        });
+    });
+
+    // 토스트 메시지 함수 (toast.js에 정의되어 있을 것으로 가정)
+    function showToast(message, type) {
+        // toast.js에 정의된 showToast 함수를 사용
+        // 예: toast.show(message, type);
+        console.log("Toast:", message, type); // 임시 콘솔 로그
+    }
+    /*]]>*/
+</script>
+</body>
+</html>

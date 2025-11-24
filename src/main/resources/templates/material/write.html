@@ -1,0 +1,172 @@
+<!doctype html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="format-detection" content="telephone=no">
+    <meta name="viewport"
+          content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+    <meta name="robots" content="noindex">
+    <meta name="googlebot" content="noindex">
+    <!-- Bootstrap CSS CDN -->
+    <th:block th:replace="~{fragments/head :: commonHead}"></th:block>
+
+    <link href="/admin/css/toast.css" rel="stylesheet"/>
+    <script src="/admin/js/lib/jquery-3.2.1.min.js"></script>
+    <script src="/admin/js/toast.js"></script>
+</head>
+<body>
+<div id="wrap" class="frame">
+<div th:replace="~{fragments/header :: header}"></div>
+
+    <div id="container" class="container">
+        <div class="title-bar">
+            <h2 class="page-title ellipsis max-1132">재료 등록</h2>
+        </div>
+
+        <main id="content" class="max-1132">
+            <div class="write-form box-wrap">
+                <form name="frm" id="frm" th:object="${materialWriteFormDTO}">
+                    <fieldset class="pack-down gap-12">
+                        <legend class="blind">기본 정보</legend>
+                        <div class="">
+                            <div class="field pack-down">
+                                <label class="label medium" for="materialName">재료명 *</label>
+                                <div class="insert pack-down">
+                                    <input type="text" id="materialName" class="input-text large"
+                                           th:field="*{name}"
+                                           title="재료명" placeholder="재료명 입력" />
+                                    <p id="nameError" class="warning"></p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="row-2">
+                            <div class="field pack-down">
+                                <label class="label medium required" for="materialCategory">카테고리</label>
+                                <div class="insert pack-down">
+                                    <select id="materialCategory" class="select medium" th:field="*{materialCategory}">
+                                        <option value="">카테고리 선택</option>
+                                        <option th:each="c : ${MaterialCategory}"
+                                                th:value="${c}"
+                                                th:text="${c.description}">
+                                        </option>
+                                    </select>
+                                    <p id="materialCategoryError" class="warning"></p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="row-3">
+                            <div class="field pack-down col">
+                                <label class="label medium required" for="materialBaseUnit">기본단위(소진단위, cf.g/kg/ea)</label>
+                                <div class="insert pack-left">
+                                    <input type="text" id="materialBaseUnit" class="input-text medium"
+                                           th:field="*{baseUnit}"
+                                           title="기본단위" placeholder="기본단위 입력" />
+                                    <p id="baseUnitError" class="warning"></p>
+                                </div>
+                            </div>
+                            <div class="field pack-down col">
+                                <label class="label medium required" for="materialSalesUnit">판매단위(cf.g/kg/ea/box)</label>
+                                <div class="insert pack-down">
+                                    <input type="text" id="materialSalesUnit" class="input-text medium"
+                                           th:field="*{salesUnit}"
+                                           title="판매단위" placeholder="판매단위 입력" />
+                                    <p id="salesUnitError" class="warning"></p>
+                                </div>
+                            </div>
+                            <div class="field pack-down col">
+                                <label class="label medium required" for="materialRate">변환비율(판매단위/기본단위)</label>
+                                <div class="insert pack-down">
+                                    <input type="text" id="materialRate" class="input-text medium"
+                                           th:field="*{conversionRate}"
+                                           title="변환비율" placeholder="변환비율 입력" />
+                                    <p id="conversionRateError" class="warning"></p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="row-3">
+                            <!-- 적정수량 추가 -->
+                            <div class="field pack-down col">
+                                <label class="label medium required" for="materialOptimalQuantity">적정 수량</label>
+                                <div class="insert pack-down">
+                                    <input type="text" id="materialOptimalQuantity" class="input-text medium"
+                                           th:field="*{optimalQuantity}"
+                                           title="적정 수량" placeholder="예: 5000 (기본단위 기준)" />
+                                    <p id="optimalQuantityError" class="warning"></p>
+                                </div>
+                            </div>
+
+                            <div class="field pack-down col">
+                                <label class="label medium required" for="supplier">공급업체명</label>
+                                <div class="insert pack-down">
+                                    <input type="text" id="supplier" class="input-text medium"
+                                           th:field="*{supplier}"
+                                           title="공급업체명" placeholder="공급업체명 입력" />
+                                    <p id="supplierError" class="warning"></p>
+                                </div>
+                            </div>
+
+                            <div class="field pack-down col">
+                                <label class="label medium required" for="materialTemperature">보관온도</label>
+                                <div class="insert pack-down">
+                                    <select id="materialTemperature" class="select medium"
+                                            th:field="*{materialTemperature}">
+                                        <option value="">보관온도 선택</option>
+                                        <option th:each="t : ${MaterialTemperature}"
+                                                th:value="${t}"
+                                                th:text="${t.description}">
+                                        </option>
+                                    </select>
+                                    <p id="materialTemperatureError" class="warning"></p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="button-area pack-center">
+                            <button type="submit" class="btn large color1">저장</button>
+                        </div>
+                    </fieldset>
+                </form>
+            </div><!--.write-form.box-wrap -->
+            <div class="button-area pack-both">
+                <a href="/admin/material/list" class="btn medium color1">목록</a>
+            </div>
+        </main>
+    <div th:replace="~{fragments/footer :: footer}"></div>
+</div><!-- // #container  -->
+</div><!--#wrap.frame-->
+<script>
+    document.getElementById("frm").addEventListener("submit", function(e) {
+        e.preventDefault();
+
+        const formData = new FormData(this); // 폼의 모든 input 포함
+
+        fetch("/admin/API/material/write", {
+            method: "POST",
+            body: formData
+        })
+            .then(async response => {
+                const data = await response.json();
+                if (!response.ok) {
+                    if (response.status === 400 && data.errors) {
+                        Object.keys(data.errors).forEach(field => {
+                            const errorMsg = data.errors[field];
+                            const errorElement = document.getElementById(field + 'Error');
+                            if (errorElement) errorElement.textContent = errorMsg;
+                        });
+                    }
+                    throw new Error("서버 검증 오류");
+                } else {
+                    if (data.success) {
+                        alert('저장 완료!');
+                        window.location.href = '/admin/material/detail/' + data.id;
+                    }
+                }
+            })
+            .catch(error => {
+                console.error("에러 발생:", error);
+            });
+    });
+</script>
+</body>
+</html>

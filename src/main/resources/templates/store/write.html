@@ -1,0 +1,436 @@
+<!DOCTYPE html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="format-detection" content="telephone=no" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="viewport"
+          content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0" />
+    <meta name="robots" content="noindex" />
+    <meta name="googlebot" content="noindex" />
+
+    <th:block th:replace="~{fragments/head :: commonHead}"></th:block>
+    <link rel="icon" th:href="@{/images/logo/favi_ad.png}" type="image/x-icon" />
+    <link rel="stylesheet" th:href="@{/css/toast.css}" />
+
+    <style>
+        #content { background: #fafafa; padding: 24px 0; }
+        .write-form.box-wrap { background: transparent; box-shadow: none; padding: 0; }
+        .section-box {
+          background: #fff; padding: 24px 28px; border-radius: 10px;
+          box-shadow: 0 4px 16px rgba(0,0,0,.08); border: 1px solid #f0f0f0; margin-bottom: 32px;
+        }
+        .section-title {
+          margin-bottom: 18px; font-size: 18px; font-weight: 700; color: #333;
+          border-bottom: 1px solid #f3f3f3; padding-bottom: 8px;
+        }
+        .section-box + .section-box { margin-top: 4px; }
+        @media (max-width: 768px) { .section-box { padding: 16px 14px; } }
+
+        /* 에러 표시용 */
+        .is-error { border-color: #ff4d4f !important; }
+        .error { color: #ff4d4f; font-size: 12px; margin-top: 4px; display: block; }
+    </style>
+
+    <script th:src="@{/js/lib/jquery-3.2.1.min.js}"></script>
+    <script th:src="@{/js/toast.js}"></script>
+    <script src="https://t1.daumcdn.net/mapjsapi/bundle/postcode/prod/postcode.v2.js" defer></script>
+</head>
+
+<body class="scroll-up">
+<div id="wrap" class="frame">
+    <div th:replace="~{fragments/header :: header}"></div>
+
+    <div id="container" class="container">
+        <div class="title-bar">
+            <h2 class="page-title ellipsis">가맹점 등록</h2>
+        </div>
+
+        <main id="content">
+            <div class="write-form box-wrap">
+
+                <form name="inputform" id="inputform"
+                      th:object="${storeWriteFormDTO}"
+                      th:action="@{/API/store/write}"
+                      method="post"
+                      enctype="multipart/form-data">
+
+                    <fieldset>
+                        <legend class="blind">기본 정보</legend>
+
+                        <!-- 매장 기본 정보 -->
+                        <div class="section-box">
+                            <h3 class="section-title">매장 기본 정보</h3>
+
+                            <div class="row-3">
+                                <div class="field pack-down col">
+                                    <label class="label medium required" for="storeName">가맹점명</label>
+                                    <div class="insert">
+                                        <input th:field="*{storeName}" type="text" id="storeName"
+                                               class="input-text medium" placeholder="서울 종로점">
+                                    </div>
+                                    <small id="storeNameError" class="error" aria-live="polite"></small>
+                                </div>
+
+                                <!-- 본사 담당자 -->
+                                <div class="field pack-down col">
+                                    <label class="label medium required">본사 담당자</label>
+                                    <div class="input-wrap" style="position:relative;">
+                                        <input id="hqWorkerSearch" class="input-text medium"
+                                               placeholder="본사 담당자 입력" list="hqWorkerList" autocomplete="off">
+                                        <input type="hidden" id="hqWorkerStaffId" th:field="*{hqWorkerStaffId}">
+                                        <datalist id="hqWorkerList">
+                                            <option th:each="w : ${hqWorkerOptions}"
+                                                    th:value="${w.staffName}"
+                                                    th:attr="data-id=${w.staffId}">
+                                            </option>
+                                        </datalist>
+                                    </div>
+                                    <small id="hqWorkerStaffIdError" class="error" aria-live="polite"></small>
+                                </div>
+                            </div>
+
+                            <div class="row-2">
+                                <div class="field pack-down col">
+                                    <label class="label medium required" for="storeStatus">운영 상태</label>
+                                    <div class="insert">
+                                        <select id="storeStatus" class="select medium" th:field="*{storeStatus}">
+                                            <option value="">선택</option>
+                                            <option th:each="c : ${StoreStatus}" th:value="${c.name()}"
+                                                    th:text="${c.description}"></option>
+                                        </select>
+                                    </div>
+                                    <small id="storeStatusError" class="error" aria-live="polite"></small>
+                                </div>
+
+                                <div class="field pack-down col">
+                                    <label class="label medium required" for="storeType">매장 구분</label>
+                                    <div class="insert">
+                                        <select id="storeType" class="select medium" th:field="*{storeType}">
+                                            <option value="">선택</option>
+                                            <option th:each="c : ${StoreType}" th:value="${c.name()}"
+                                                    th:text="${c.description}"></option>
+                                        </select>
+                                    </div>
+                                    <small id="storeTypeError" class="error" aria-live="polite"></small>
+                                </div>
+                            </div>
+
+                            <div class="row-3">
+                                <div class="field pack-down col">
+                                    <label class="label medium required" for="storeTotalEmployees">총 직원 수</label>
+                                    <div class="insert">
+                                        <input th:field="*{storeTotalEmployees}" id="storeTotalEmployees"
+                                               class="input-text medium" placeholder="예: 7">
+                                    </div>
+                                    <small id="storeTotalEmployeesError" class="error" aria-live="polite"></small>
+                                </div>
+
+                                <div class="field pack-down col">
+                                    <label class="label medium required" for="storePhone">매장 연락처</label>
+                                    <div class="insert">
+                                        <input th:field="*{storePhone}" type="text" id="storePhone"
+                                               class="input-text medium" placeholder="02-1234-1234">
+                                    </div>
+                                    <small id="storePhoneError" class="error" aria-live="polite"></small>
+                                </div>
+
+                                <div class="field pack-down col">
+                                    <label class="label medium required" for="businessRegistrationNumber">사업자등록번호</label>
+                                    <div class="insert">
+                                        <input th:field="*{businessRegistrationNumber}" type="text"
+                                               id="businessRegistrationNumber" class="input-text medium"
+                                               placeholder="123-45-67890">
+                                    </div>
+                                    <small id="businessRegistrationNumberError" class="error" aria-live="polite"></small>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 주소 -->
+                        <div class="section-box">
+                            <h3 class="section-title">주소</h3>
+
+                            <div class="row-3">
+                                <div class="field pack-down col">
+                                    <label class="label medium required" for="userAddress1">주소</label>
+                                    <input type="button" class="btn small color1" id="addressSearch"
+                                           style="margin-left:10px" value="주소 검색">
+
+                                    <div class="insert">
+                                        <input th:field="*{userAddress1}" id="userAddress1" type="text"
+                                               class="input-text medium" placeholder="주소를 검색해주세요" readonly>
+                                    </div>
+                                    <small id="userAddress1Error" class="error" aria-live="polite"></small>
+
+                                    <div class="insert">
+                                        <input th:field="*{userAddress2}" id="userAddress2" type="text"
+                                               class="input-text medium" placeholder="상세 주소 작성">
+                                    </div>
+                                    <small id="userAddress2Error" class="error" aria-live="polite"></small>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 계약 정보 -->
+                        <div class="section-box">
+                            <h3 class="section-title">계약 정보</h3>
+
+                            <div class="row-3">
+                                <div class="field pack-down col">
+                                    <label class="label medium required" for="storeContractStartDate">계약일</label>
+                                    <div class="insert">
+                                        <input th:field="*{storeContractStartDate}" id="storeContractStartDate"
+                                               type="date" class="input-text medium">
+                                    </div>
+                                    <small id="storeContractStartDateError" class="error" aria-live="polite"></small>
+                                </div>
+
+                                <div class="field pack-down col">
+                                    <label class="label medium required" for="storeContractAffiliateDate">가맹일</label>
+                                    <div class="insert">
+                                        <input th:field="*{storeContractAffiliateDate}" id="storeContractAffiliateDate"
+                                               type="date" class="input-text medium">
+                                    </div>
+                                    <small id="storeContractAffiliateDateError" class="error" aria-live="polite"></small>
+                                </div>
+
+                                <div class="field pack-down col">
+                                    <label class="label medium required" for="storeAffiliatePrice">가맹비 (만원)</label>
+                                    <div class="insert">
+                                        <input th:field="*{storeAffiliatePrice}" id="storeAffiliatePrice"
+                                               type="number" step="0.01" class="input-text medium" placeholder="예: 6645">
+                                    </div>
+                                    <small id="storeAffiliatePriceError" class="error" aria-live="polite"></small>
+                                </div>
+                            </div>
+
+                            <div class="row-3">
+                                <div class="field pack-down col">
+                                    <label class="label medium required" for="storeContractTerm">계약기간(개월)</label>
+                                    <div class="insert">
+                                        <input th:field="*{storeContractTerm}" id="storeContractTerm"
+                                               class="input-text medium" placeholder="예: 24">
+                                    </div>
+                                    <small id="storeContractTermError" class="error" aria-live="polite"></small>
+                                </div>
+
+                                <div class="field pack-down col">
+                                    <label class="label medium" for="storeMonthlySales">월 매출</label>
+                                    <div class="insert">
+                                        <input th:field="*{storeMonthlySales}" id="storeMonthlySales"
+                                               type="number" step="0.01" class="input-text medium"
+                                               placeholder="예: 12345678.90">
+                                    </div>
+                                    <small id="storeMonthlySalesError" class="error" aria-live="polite"></small>
+                                </div>
+
+                                <div class="field pack-down col">
+                                    <label class="label medium required" for="royalty">월 로열티(%)</label>
+                                    <div class="insert">
+                                        <input th:field="*{royalty}" id="royalty"
+                                               type="number" step="0.01" class="input-text medium" placeholder="예: 15">
+                                    </div>
+                                    <small id="royaltyError" class="error" aria-live="polite"></small>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 특이사항 -->
+                        <div class="section-box">
+                            <h3 class="section-title">특이사항</h3>
+                            <div class="field">
+                                <div class="insert">
+                  <textarea th:field="*{comment}" id="comment" rows="5"
+                            class="input-text medium"
+                            placeholder="특이사항이 있으시면 작성해주세요"></textarea>
+                                </div>
+                                <small id="commentError" class="error" aria-live="polite"></small>
+                            </div>
+                        </div>
+
+                        <div class="button-area pack-center">
+                            <button type="submit" class="btn large color1">저장</button>
+                            <a href="/admin/store/list" class="btn large bdr-color1">목록</a>
+                        </div>
+                    </fieldset>
+                </form>
+            </div>
+        </main>
+    </div>
+</div>
+
+<script>
+    // ===== helpers =====
+    const $id = (id) => document.getElementById(id);
+
+    function setError(fieldId, msg) {
+      const input = $id(fieldId);
+      const box = $id(fieldId + "Error");
+      if (input) input.classList.add("is-error");
+      if (box) box.textContent = msg || "";
+    }
+
+    function clearFieldError(fieldId) {
+      const input = $id(fieldId);
+      const box = $id(fieldId + "Error");
+      if (input) input.classList.remove("is-error");
+      if (box) box.textContent = "";
+    }
+
+    function clearAllErrors() {
+      document.querySelectorAll(".is-error").forEach(el => el.classList.remove("is-error"));
+      document.querySelectorAll('[id$="Error"]').forEach(el => el.textContent = "");
+    }
+
+    // datalist value -> hidden id 동기화 (본사 담당자)
+    function wireDatalist(inputId, listId, hiddenId) {
+      const input = $id(inputId);
+      const list = $id(listId);
+      const hidden = $id(hiddenId);
+      if (!input || !list || !hidden) return;
+
+      function sync() {
+        const val = (input.value || "").trim();
+        const opts = Array.from(list.options || []);
+        let opt = opts.find(o => (o.value || "").trim() === val);
+
+        if (!opt && val) {
+          const cand = opts.filter(o => (o.value || "").toLowerCase().includes(val.toLowerCase()));
+          if (cand.length === 1) opt = cand[0];
+        }
+
+        hidden.value = opt ? (opt.getAttribute("data-id") || "") : "";
+        if (hidden.value) clearFieldError(hiddenId);
+      }
+
+      input.addEventListener("input", sync);
+      input.addEventListener("change", sync);
+      input.addEventListener("blur", sync);
+      sync();
+    }
+
+    // ===== client validate =====
+    function clientValidate() {
+      const errs = {};
+      const intOk = (v) => /^\d+$/.test(v);
+      const isNum = (v) => !isNaN(Number(v));
+
+      if (!$id("storeName").value.trim()) errs.storeName = "가맹점명을 입력해주세요";
+      if (!$id("hqWorkerStaffId").value) errs.hqWorkerStaffId = "본사 담당자를 선택해주세요";
+      if (!$id("storeStatus").value) errs.storeStatus = "운영 상태를 선택해주세요";
+      if (!$id("storeType").value) errs.storeType = "매장 구분을 선택해주세요";
+
+      const totalEmp = $id("storeTotalEmployees").value.trim();
+      if (!totalEmp) errs.storeTotalEmployees = "총 직원 수를 입력해주세요";
+      else if (!intOk(totalEmp) || parseInt(totalEmp, 10) < 1)
+        errs.storeTotalEmployees = "총 직원 수는 1 이상의 정수여야 합니다";
+
+      const phone = $id("storePhone").value.trim();
+      if (!phone) errs.storePhone = "매장 연락처를 입력해주세요";
+      else if (!/^[0-9\-]{9,13}$/.test(phone))
+        errs.storePhone = "전화번호는 숫자와 하이픈만, 9~13자리로 입력해주세요";
+
+      const brn = $id("businessRegistrationNumber").value.trim();
+      if (!brn) errs.businessRegistrationNumber = "사업자등록번호를 입력해주세요";
+      else if (!/^[0-9\-]{9,13}$/.test(brn))
+        errs.businessRegistrationNumber = "사업자등록번호는 숫자와 하이픈만, 9~13자리로 입력해주세요";
+
+      if (!$id("userAddress1").value.trim()) errs.userAddress1 = "주소를 검색해 주세요";
+      if (!$id("userAddress2").value.trim()) errs.userAddress2 = "상세 주소를 입력해 주세요";
+
+      if (!$id("storeContractStartDate").value) errs.storeContractStartDate = "계약일을 선택해주세요";
+      if (!$id("storeContractAffiliateDate").value) errs.storeContractAffiliateDate = "가맹일을 선택해주세요";
+
+      const term = $id("storeContractTerm").value.trim();
+      if (!term) errs.storeContractTerm = "계약기간을 입력해주세요";
+      else if (!intOk(term) || parseInt(term, 10) < 1)
+        errs.storeContractTerm = "계약기간은 1 이상의 정수여야 합니다";
+
+      const affPrice = $id("storeAffiliatePrice").value.trim();
+      if (!affPrice) errs.storeAffiliatePrice = "가맹비를 입력해주세요";
+      else if (!isNum(affPrice)) errs.storeAffiliatePrice = "가맹비는 숫자여야 합니다";
+
+      const royalty = $id("royalty").value.trim();
+      if (!royalty) errs.royalty = "월 로열티(%)를 입력해주세요";
+      else if (!isNum(royalty)) errs.royalty = "월 로열티(%)는 숫자여야 합니다";
+
+      const monthly = $id("storeMonthlySales").value.trim();
+      if (monthly && !isNum(monthly))
+        errs.storeMonthlySales = "월 매출은 숫자여야 합니다";
+
+      return errs;
+    }
+
+    // ===== daum postcode =====
+    function findAddr() {
+      if (!(window.daum && window.daum.Postcode)) {
+        alert("주소 검색 도구를 불러오지 못했습니다.\n임시 검색창을 띄웁니다.");
+        window.open("https://postcode.map.daum.net/search", "postcode",
+          "width=530,height=600,scrollbars=yes,resizable=yes");
+        return;
+      }
+
+      new daum.Postcode({
+        oncomplete: function (data) {
+          const addr = data.roadAddress || data.jibunAddress;
+          $id("userAddress1").value = addr;
+          $id("userAddress2").focus();
+          clearFieldError("userAddress1");
+        }
+      }).open();
+    }
+
+    // ===== submit (REST 호출 + redirect) =====
+    async function handleSubmit(e) {
+      e.preventDefault();
+      clearAllErrors();
+
+      const errs = clientValidate();
+      if (Object.keys(errs).length) {
+        Object.entries(errs).forEach(([k, v]) => setError(k, v));
+        return;
+      }
+
+      const form = $id("inputform");
+      const fd = new FormData(form);
+
+      try {
+        const res = await fetch(form.getAttribute("action"), {
+          method: "POST",
+          body: fd
+        });
+
+        const data = await res.json().catch(() => ({}));
+
+        if (!res.ok || data.success === false) {
+          // 서버 validation 에러 반영
+          if (data.errors) {
+            Object.entries(data.errors).forEach(([k, v]) => setError(k, v));
+          } else {
+            alert(data.message || "등록에 실패했습니다.");
+          }
+          return;
+        }
+
+        // 성공 → 상세로 이동 (원하면 list로 바꿔도 됨)
+        const id = data.id;
+        alert("가맹점이 등록되었습니다!");
+        location.href = `/admin/store/detail/${id}`;
+        // location.href = "/admin/store/list";  // 목록으로 보내고 싶으면 이걸로
+
+      } catch (err) {
+        console.error(err);
+        alert("네트워크 오류가 발생했습니다.");
+      }
+    }
+
+    document.addEventListener("DOMContentLoaded", () => {
+      wireDatalist("hqWorkerSearch", "hqWorkerList", "hqWorkerStaffId");
+      $id("addressSearch")?.addEventListener("click", findAddr);
+      $id("inputform")?.addEventListener("submit", handleSubmit);
+    });
+</script>
+</body>
+</html>

@@ -1,0 +1,69 @@
+@charset "UTF-8";
+/* ICT TeamONE _ 토스트랩 _ KimJuyeon _ 20251014 */
+a,
+a:link,
+a:visited,
+a:active,
+a:hover						{text-decoration: none; color: inherit;
+	outline: none;
+	-webkit-tap-highlight-color: rgba(0, 0, 0, 0);
+}
+button 						{border: 0 none; font: inherit; color: inherit;
+	-webkit-appearance:none; -moz-appearance: none; appearance: none;
+}
+button:focus,
+a:focus						{outline-color: transparent; outline-style: none;}
+.btn 						{width: fit-content; font-size: inherit; text-align: center; vertical-align: middle; border: 0 none; outline: none; cursor: pointer; background-color: transparent; box-sizing: border-box; border-radius: 0; gap: 8px;
+	display: inline-flex; justify-content: center; align-items: center;
+	word-break: keep-all; white-space: normal;
+}
+
+a.btn						{text-decoration: none;}
+input.btn,
+button.btn					{overflow: visible; margin: 0;}
+
+/* button size */
+.btn.xsmall					{height: var(--xsmall); padding: 0 clamp(2px, 0.53vw, 4px); font-size: .875rem; line-height: var(--xsmall); border-radius: 2px;}
+.btn.small:not(.transparent)		{height: var(--small); padding: 0 clamp(4px, 1.07vw, 8px); font-size: .9rem; line-height: var(--small); border-radius: 2px;}
+.btn.medium					{height: var(--medium); padding: 0 clamp(8px, 2.13vw, 16px); font-size: 1rem; line-height: var(--medium); border-radius: 4px;}
+.btn.large					{height: var(--large); padding: 0 clamp(10px, 2.67vw, 20px); font-size: 1.1rem; line-height: var(--large); border-radius: 8px;}
+
+
+/* button color */
+.btn.color0					{background: #000; color: #fff;}
+.btn.color0:hover			{}
+.btn.color1					{background: var(--color1); color: #fff;}
+.btn.color1:hover			{}
+.btn.color2					{background: var(--color2); color: #fff;}
+.btn.color2:hover			{}
+.btn.color3					{background: var(--color3); color: #fff;}
+.btn.color3:hover			{}
+.btn[class*="bg-"]			{color: #fff;}
+.btn.bdr-color0,
+.btn.bdr-color1,
+.btn.bdr-color2				{border-style: inset;}
+.btn.bdr-color0				{border: 1px solid #000;}
+.btn.bdr-color0:hover		{}
+.btn.bdr-color1				{border: 1px solid var(--color1);}
+.btn.bdr-color1:hover		{}
+.btn.bdr-color2				{border: 1px solid var(--color2);}
+.btn.bdr-color2:hover		{}
+.btn.bdr-color3				{border: 1px solid var(--color3);}
+.btn.bdr-color3:hover		{}
+.btn.bdr-gray				{border: 1px solid var(--bdr-color);}
+.btn.bdr-gray:hover			{}
+.btn.bdr-gray .material-symbols-outlined{color: var(--color2);}
+
+/* button etc */
+.btn.medium.btn-group		{display: inline-flex; padding: 0; gap: 0;}
+.btn-group .btn 			{padding: 0 clamp(4px, 1.07vw, 8px); border-radius: 0;}
+.btn-group .btn input 		{position: absolute; height: 1px; width: 1px; border: 0; overflow: hidden; z-index: -1; overflow: hidden; background: var(--light-gray);}
+.btn-group .btn.active		{background: var(--color1); color: #fff;}
+
+/* btn disabled */
+.btn[disabled]				{filter: grayscale(100%); opacity: .65;}
+
+/* btn inner */
+
+/* button-area */
+.button-area				{margin-top: clamp(24px, 3.75vw, 48px);}

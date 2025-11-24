@@ -1,0 +1,230 @@
+<!doctype html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="robots" content="noindex">
+    <th:block th:replace="~{fragments/head :: commonHead}"></th:block>
+
+    <link href="/admin/css/toast.css" rel="stylesheet"/>
+    <script src="/admin/js/lib/jquery-3.2.1.min.js"></script>
+    <script src="/admin/js/toast.js"></script>
+</head>
+<body>
+<div id="wrap" class="frame">
+    <div th:replace="~{fragments/header :: header}"></div>
+
+    <div id="container" class="container">
+        <div class="title-bar">
+            <h2 class="page-title ellipsis max-1132">본사 재고 입고 등록</h2>
+        </div>
+
+        <main id="content" class="max-1132">
+            <div class="write-form box-wrap">
+                <form id="frm" name="frm" method="post" onsubmit="return false;">
+                    <fieldset class="pack-down gap-12">
+                        <legend class="blind">입고 정보</legend>
+
+                        <div class="row-3">
+                            <!-- 카테고리 선택 -->
+                            <div class="field pack-down col">
+                                <label class="label medium required" for="categorySelect">재료 카테고리</label>
+                                <div class="insert pack-down">
+                                    <select id="categorySelect" class="select medium" required onchange="onCategoryChange(this.value)">
+                                        <option value="">카테고리 선택</option>
+                                        <option th:each="c : ${categories}"
+                                                th:value="${c.name()}"
+                                                th:text="${c.description != null ? c.description : c.name()}">
+                                        </option>
+                                    </select>
+                                    <p id="categoryError" class="warning"></p>
+                                </div>
+                            </div>
+
+                            <!-- 재료 선택 -->
+                            <div class="field pack-down">
+                                <label class="label medium required" for="materialSelect">재료 선택</label>
+                                <div class="insert pack-down">
+                                    <select id="materialSelect" name="materialId" class="select medium" required>
+                                        <option value="">재료 선택</option>
+                                    </select>
+                                    <p id="materialError" class="warning"></p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row-3">
+                            <div class="field pack-down col">
+                                <label class="label medium required" for="quantity">입고 수량</label>
+                                <div class="insert pack-down">
+                                    <input type="number" step="0.001" min="1.000"
+                                           id="quantity" name="quantity"
+                                           class="input-text medium" placeholder="예: 100.000" required>
+                                    <p id="quantityError" class="warning"></p>
+                                </div>
+                            </div>
+
+                            <div class="field pack-down col">
+                                <label class="label medium required" for="unitPrice">입고 단가 (본사 매입가)</label>
+                                <div class="insert pack-down">
+                                    <input type="number" step="1.000" min="0.000"
+                                           id="unitPrice" name="unitPrice"
+                                           class="input-text medium" placeholder="예: 5000" required>
+                                    <p id="unitPriceError" class="warning"></p>
+                                </div>
+                            </div>
+
+                            <div class="field pack-down col">
+                                <label class="label medium" for="sellingPrice">출고 단가 (가맹점 공급가)</label>
+                                <div class="insert pack-down">
+                                    <input type="number" step="1.000" min="0.000"
+                                           id="sellingPrice" name="sellingPrice"
+                                           class="input-text medium" placeholder="예: 6000">
+                                    <p id="sellingPriceError" class="warning"></p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row-3">
+                            <div class="field pack-down col">
+                                <label class="label medium required" for="inDate">입고일</label>
+                                <div class="insert pack-down">
+                                    <input type="datetime-local" id="inDate" name="inDate"
+                                           th:value="${#temporals.format(now, 'yyyy-MM-dd''T''HH:mm')}"
+                                           class="input-text medium" required>
+                                    <p id="inDateError" class="warning"></p>
+                                </div>
+                            </div>
+
+                            <div class="field pack-down col">
+                                <label class="label medium" for="expirationDate">유통기한</label>
+                                <div class="insert pack-down">
+                                    <input type="date"
+                                           id="expirationDate"
+                                           name="expirationDate"
+                                           class="input-text medium"
+                                           placeholder="예: 2026-05-05">
+                                    <p id="expirationDateError" class="warning"></p>
+                                </div>
+                            </div>
+
+                            <div class="field pack-down col">
+                                <label class="label medium" for="memo">비고</label>
+                                <div class="insert pack-down">
+                                    <input type="text" id="memo" name="memo"
+                                           class="input-text medium" placeholder="비고 입력 (선택)">
+                                    <p id="memoError" class="warning"></p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="button-area pack-center">
+                            <button type="submit" class="btn large color1">입고 등록</button>
+                        </div>
+                    </fieldset>
+                </form>
+            </div>
+
+            <div class="button-area pack-both">
+                <a href="/admin/inventory/list" class="btn medium color1">목록</a>
+            </div>
+        </main>
+        <div th:replace="~{fragments/footer :: footer}"></div>
+    </div>
+</div>
+
+<script>
+    function toLocalDate(dateInputValue) {
+      const v = dateInputValue?.trim();
+      if (!v) return null;            // 빈 값이면 null 전송
+      // HTML date 입력은 이미 "yyyy-MM-dd" 포맷
+      return v;
+    }
+    // 안전 파서와 검증 추가
+    function parseNum(v) {
+      if (v === undefined || v === null) return null;
+      const s = String(v).trim();
+      if (s === "") return null;
+      const n = Number(s);
+      return Number.isFinite(n) ? n : null;
+    }
+
+
+    // 카테고리 변경 시 재료 목록 로드
+    function onCategoryChange(category) {
+        const materialSelect = document.getElementById("materialSelect");
+        materialSelect.innerHTML = '<option value="">재료 선택</option>';
+
+        if (!category) return;
+
+        fetch(`/admin/API/material/list?category=${category}`)
+            .then(res => res.json())
+            .then(data => {
+                data.forEach(m => {
+                    const opt = document.createElement("option");
+                    opt.value = m.id;
+                    opt.textContent = `${m.name} (${m.code})`;
+                    materialSelect.appendChild(opt);
+                });
+            })
+            .catch(err => console.error("재료 목록 로드 실패:", err));
+    }
+
+
+    function toIso(dtLocal) {
+      // datetime-local → ISO8601
+      const v = dtLocal?.trim();
+      if (!v) return null;
+      // 브라우저 local을 그대로 보냄
+      return new Date(v).toISOString().slice(0,19); // "yyyy-MM-ddTHH:mm:ss"
+    }
+
+    document.getElementById("frm").addEventListener("submit", async function () {
+      const materialId  = document.getElementById("materialSelect").value;
+      const quantityRaw = document.getElementById("quantity").value;
+      const unitPriceRaw= document.getElementById("unitPrice").value;
+      const sellPriceRaw= document.getElementById("sellingPrice").value;
+      const inDateRaw   = document.getElementById("inDate").value;
+      const expRaw      = document.getElementById("expirationDate")?.value;
+      const memo        = document.getElementById("memo").value;
+
+      const quantity     = parseNum(quantityRaw);
+      const unitPrice    = parseNum(unitPriceRaw);
+      const sellingPrice = parseNum(sellPriceRaw);
+
+      // 클라 검증
+      if (!materialId)           return alert("재료를 선택하세요.");
+      if (quantity === null)     return alert("입고 수량을 입력하세요.");
+      if (quantity <= 0)         return alert("입고 수량은 0보다 커야 합니다.");
+      if (unitPrice === null)    return alert("입고 단가를 입력하세요.");
+      if (unitPrice < 0)         return alert("입고 단가는 0 이상이어야 합니다.");
+
+      const payload = {
+        materialId:  Number(materialId),
+        quantity:    quantity,              // 0도 그대로 전송됨
+        unitPrice:   unitPrice,
+        sellingPrice:sellingPrice,          // null 허용
+        inDate:      toIso(inDateRaw),      // "yyyy-MM-ddTHH:mm:ss"
+        expirationDate: toLocalDate(expRaw),// "yyyy-MM-dd" 또는 null
+        memo:        memo || ""
+      };
+
+      const res  = await fetch("/admin/API/inventory/in", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload)
+      });
+
+      if (!res.ok) {
+        const t = await res.text();
+        alert("입고 등록 실패\n" + t);
+        return;
+      }
+      const id = await res.json();
+      alert("입고 등록 완료: ID=" + id);
+      location.href = "/admin/inventory/log/" + payload.materialId; // 저장 후 동선
+    });
+</script>
+</body>
+</html>

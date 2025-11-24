@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16">
+    <g data-name="그룹 338" transform="translate(-21 -1241)">
+        <path data-name="선 2" transform="translate(21 1252.5)" style="fill:none;stroke:#000" d="M14.5 0H0"/>
+        <path data-name="선 3" transform="translate(22.5 1245.5)" style="fill:none;stroke:#000" d="M0 0h14.5"/>
+        <rect data-name="사각형 1147" width="5" height="5" rx="2.5" transform="translate(32 1250)"/>
+        <rect data-name="사각형 1148" width="5" height="5" rx="2.5" transform="translate(21 1243)"/>
+    </g>
+</svg>

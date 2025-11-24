@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="format-detection" content="telephone=no">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="viewport"
+          content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <meta name="robots" content="noindex">
+    <meta name="googlebot" content="noindex">
+    <title>토스트랩 관리자</title>
+
+    <th:block th:replace="~{fragments/head :: commonHead}"></th:block>
+
+    <!-- favicon -->
+    <link rel="icon" th:href="@{/images/logo/favi_ad.png}" type="image/x-icon"/>
+
+    <!-- CSS -->
+    <link rel="stylesheet" th:href="@{/css/toast.css}"/>
+
+    <!-- JS -->
+    <script th:src="@{/js/lib/jquery-3.2.1.min.js}"></script>
+    <script th:src="@{/js/toast.js}"></script>
+</head>
+<body class="scroll-up">
+<div id="wrap" class="frame">
+    <div th:replace="~{fragments/header :: header}"></div>
+
+    <div id="container" class="container">
+        <div class="title-bar">
+            <h2 class="page-title ellipsis">가맹점 상세</h2>
+        </div>
+
+        <main id="content" class="max-900">
+            <div class="box-wrap">
+                <div class="pack-down gap-20">
+                    <h3 class="fs-2xl fw-600 fc-333" th:text="${store.storeName}">가맹점명</h3>
+
+                    <div class="row col-3">
+                        <div class="pack-down col">
+                            <span class="fs-ss fc-999">ID</span>
+                            <span th:text="${store.storeId}">ID</span>
+                        </div>
+                        <div class="pack-down col">
+                            <span class="fs-ss fc-999">점주명</span>
+                            <span th:text="${store.staffName != null ? store.staffName : '미지정'}">점주명</span>
+                        </div>
+                        <div class="pack-down col">
+                            <span class="fs-ss fc-999">본사 담당자명</span>
+                            <span th:text="${store.memberName} ?: '미지정'">본사 담당자명</span>
+                        </div>
+                    </div>
+
+                    <div class="row col-3">
+                        <div class="pack-down col">
+                            <span class="fs-ss fc-999">이메일</span>
+                            <span th:text="${store.memberEmail} ?: ''">이메일</span>
+                        </div>
+                        <div class="pack-down col">
+                            <span class="fs-ss fc-999">월 매출</span>
+                            <span th:text="${store.storeMonthlySales}">월 매출</span>
+                        </div>
+                        <div class="pack-down col">
+                            <span class="fs-ss fc-999">총 직원 수</span>
+                            <span th:text="${store.storeTotalEmployees}">총 직원 수</span>
+                        </div>
+                    </div>
+
+                    <div class="row col-3">
+                        <div class="pack-down col">
+                            <span class="fs-ss fc-999">사업장등록번호</span>
+                            <span th:text="${store.businessRegistrationNumber}">사업장등록번호</span>
+                        </div>
+                        <div class="pack-down col">
+                            <span class="fs-ss fc-999">매장 연락처</span>
+                            <span th:text="${store.storePhone}">매장 연락처</span>
+                        </div>
+                        <div class="pack-down col">
+                            <span class="fs-ss fc-999">주소</span>
+                            <span th:text="${store.storeLocation != null ? store.storeLocation : '미지정'}">주소</span>
+                        </div>
+                    </div>
+
+                    <div class="row col-3">
+                        <div class="pack-down col">
+                            <span class="fs-ss fc-999">계약일</span>
+                            <span th:text="${store.storeContractStartDate}">계약일</span>
+                        </div>
+                        <div class="pack-down col">
+                            <span class="fs-ss fc-999">가맹일</span>
+                            <span th:text="${store.storeContractAffiliateDate}">가맹일</span>
+                        </div>
+                        <div class="pack-down col">
+                            <span class="fs-ss fc-999">계약기간</span>
+                            <span th:text="${store.storeContractTerm}">계약기간</span>
+                        </div>
+                    </div>
+
+                    <div class="row col-3">
+                        <div class="pack-down col">
+                            <span class="fs-ss fc-999">가맹비</span>
+                            <span th:text="${store.storeAffiliatePrice}">가맹비</span>
+                        </div>
+                        <div class="pack-down col">
+                            <span class="fs-ss fc-999">월 로열티</span>
+                            <span th:text="${store.royalty}">월 로열티</span>
+                        </div>
+                    </div>
+
+                    <div class="row col-3">
+                        <div class="pack-down col">
+                            <span class="fs-ss fc-999">특이사항</span>
+                            <span th:text="${store.comment}">월 특이사항</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="button-area pack-both">
+                    <a th:href="@{/store/modify/{id}(id=${store.storeId})}" class="btn medium color1">수정</a>
+                </div>
+            </div>
+            <div class="button-area pack-both">
+                <a href="/admin/store/list" class="btn medium color1">목록</a>
+            </div>
+        </main>
+        <div th:replace="~{fragments/footer :: footer}"></div>
+    </div>
+</div>
+</body>
+</html>

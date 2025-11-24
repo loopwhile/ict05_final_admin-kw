@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Footer</title>
+</head>
+<body>
+<th:block th:fragment="footer">
+    <footer id="footer">
+        <div class="pack-down-center fs-s ta-c" style="gap:4px">
+            <p class="copyright">&copy; 2025 ToastLab. 모든 권리 보유.</p>
+            <p>토스트 전문점을 위한 통합 관리 솔루션</p>
+            <nav>
+                <a href="/" style="margin:0 10px;">Home</a> |
+                <a href="/admin/notice/list" style="margin:0 10px;">공지사항</a> |
+                <a href="/admin/swagger-ui/index.html" style="margin:0 10px;">Swagger</a> |
+                <a href="/admin/javadoc/index.html" style="margin:0 10px;">Javadoc</a>
+            </nav>
+        </div>
+    </footer>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+    <script src="/admin/js/axios-common.js"></script>
+    <script type="module" src="/admin/js/fcm-web.js"></script>
+</th:block>
+</body>
+</html>

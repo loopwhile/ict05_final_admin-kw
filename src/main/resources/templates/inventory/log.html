@@ -1,0 +1,682 @@
+<!doctype html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="format-detection" content="telephone=no">
+    <meta name="viewport"
+          content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+    <meta name="robots" content="noindex">
+    <meta name="googlebot" content="noindex">
+    <!-- Bootstrap CSS CDN -->
+    <th:block th:replace="~{fragments/head :: commonHead}"></th:block>
+
+    <link href="/admin/css/toast.css" rel="stylesheet"/>
+    <script src="/admin/js/lib/jquery-3.2.1.min.js"></script>
+    <script src="/admin/js/toast.js"></script>
+    <script src="/admin/js/excel-download.js" defer></script>
+</head>
+<body>
+<div id="wrap" class="frame">
+    <div th:replace="~{fragments/header :: header}"></div>
+
+    <div id="container" class="container" th:data-material-id="${materialId}">
+        <div class="title-bar">
+            <h2 class="page-title ellipsis max-1132">
+                <span class="fw-400">재고 입출고 로그 &gt;</span>
+                <span th:text="${materialName}">재료명</span>
+            </h2>
+        </div>
+
+        <main id="content" class="max-1132">
+            <input type="hidden" id="materialId" th:value="${materialId}"/>
+            <input type="hidden" id="inventoryId" th:value="${inventory.id}"/>
+
+            <!-- 사용중지 경고 -->
+            <div th:if="${material.materialStatus.name() == 'STOP'}"
+                 class="alert alert-warning mb-3">
+                본사에서 <strong>사용중지된 재료</strong>입니다.
+            </div>
+
+            <div class="pack-both">
+                <a th:href="@{/inventory/list}" class="btn medium bdr-color1">재고 목록</a>
+                <a th:href="@{/inventory/batch-status/{mid}(mid=${materialId})}" class="btn medium bdr-color1">LOT 현황</a>
+            </div>
+
+            <div class="box-wrap">
+                <div class="row-2 rw-mo-direction-column">
+                    <div class="pack-down col">
+                        <span class="fs-ss fc-999">현재 수량</span>
+                        <span class="pack-left mo-pack-down">
+                            <!-- inventory가 있을 때만 상태표시 -->
+                            <span th:if="${inventory != null}">
+                                <span class="badge rounded-pill"
+                                      th:classappend="${inventory.status.name() == 'SUFFICIENT'} ? ' bg-success' :
+                                                      (${inventory.status.name() == 'LOW'} ? ' bg-warning' : ' bg-danger')"
+                                      th:text="${inventory.status.description}">
+                                </span>
+                            </span>
+                            <span th:text="${inventory.quantity != null ? #numbers.formatDecimal(inventory.quantity,1,'COMMA',0,'POINT') : '0'}" class="fs-2xl fw-700">현재 수량</span>
+                            <span th:text="${material.salesUnit}" class="fs-ss fc-999">기본단위</span>
+
+                            <button type="button" class="btn small color2" onclick="modalOpen('#adjustModal');">조정</button>
+                        </span>
+                    </div>
+
+                    <div class="pack-down col">
+                        <span class="fs-ss fc-999">적정 수량</span>
+                        <span class="pack-left">
+                            <span th:text="${inventory.optimalQuantity != null ? #numbers.formatDecimal(inventory.optimalQuantity,1,'COMMA',0,'POINT') : '0'}" class="fs-2xl fw-300">적정 수량</span>
+                            <span th:text="${material.salesUnit}" class="fs-ss fc-999">기본단위</span>
+
+                            <a th:href="@{/material/modify/{id}(id=${material.id})}" class="btn small color2">수정</a>
+                        </span>
+                    </div>
+                </div>
+
+                <hr class="line bg-000">
+
+                <!-- 검색 영역 -->
+                <div id="search" class="search">
+                    <form id="filterForm" onsubmit="return false;">
+                        <fieldset>
+                            <legend class="blind">검색</legend>
+                            <div class="pack-both-bottom rw-mo-direction-column">
+                                <!-- 타입 라디오 -->
+                                <div class="select-options r4">
+                                    <label>
+                                        <input type="radio" name="type" value="" th:checked="${selectedType == null or selectedType == ''}">
+                                        <span class="btn medium r4">전체</span>
+                                    </label>
+                                    <label>
+                                        <input type="radio" name="type" value="INCOME" th:checked="${selectedType == 'INCOME'}">
+                                        <span class="btn medium r4">입고</span>
+                                    </label>
+                                    <label>
+                                        <input type="radio" name="type" value="OUTGO"  th:checked="${selectedType == 'OUTGO'}">
+                                        <span class="btn medium r4">출고</span>
+                                    </label>
+                                    <label>
+                                        <input type="radio" name="type" value="ADJUST" th:checked="${selectedType == 'ADJUST'}">
+                                        <span class="btn medium r4">조정</span>
+                                    </label>
+                                </div>
+
+                                <div class="pack-down-right">
+                                    <!-- 버튼 -->
+                                    <div class="pack-left">
+                                        <button type="button" id="btnToday" class="btn small bdr-color1">오늘</button>
+                                        <button type="button" id="btn7d" class="btn small bdr-color1">7일</button>
+                                        <button type="button" id="btn30d" class="btn small bdr-color1">30일</button>
+                                    </div>
+
+                                    <!-- 기간 -->
+                                    <div class="pack-left">
+                                        <input type="date" id="startDate" th:value="${startDate}" class="input-text medium" style="width: clamp(112px, 29.87vw, 128px)">
+                                        <span>~</span>
+                                        <input type="date" id="endDate" th:value="${endDate}" class="input-text medium" style="width: clamp(112px, 29.87vw, 128px)">
+                                        <button type="button" id="btnSearch" class="btn medium color1">검색</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </fieldset>
+                    </form>
+                </div>
+
+                <!-- 목록 -->
+                <section class="pack-down">
+                    <div class="list-header pack-both">
+                        <div class="pack-left">
+                        </div>
+
+                        <div class="pack-left">
+                            <button type="button" class="btn medium bdr-color2"
+                                    th:attr="data-excel-endpoint=@{'/API/inventory/' + ${materialId} + '/log/download'}"
+                                    onclick="excelDownload(this)">엑셀다운로드</button>
+                        </div>
+                    </div>
+                    <table class="data-table" id="logTable">
+                        <thead>
+                            <tr>
+                                <th scope="col">로그일시</th>
+                                <th scope="col">유형</th>
+                                <th scope="col">수량</th>
+                                <th scope="col">로그 후 재고</th>
+                                <th scope="col">입고번호</th>
+                                <th scope="col">비고</th>
+                                <th scope="col">버튼</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr th:if="${logs == null or #lists.isEmpty(logs.content)}">
+                                <td colspan="8">입출고 내역이 없습니다.</td>
+                            </tr>
+
+                            <tr th:each="row : ${logs.content}">
+                                <td data-th="로그일시" th:text="${#temporals.format(row.logDate, 'yyyy-MM-dd HH:mm:ss')}"></td>
+                                <td data-th="유형">
+                                    <span th:switch="${row.logType}">
+                                        <span th:case="'INCOME'" class="type-in">입고</span>
+                                        <span th:case="'OUTGO'"   class="type-out">출고</span>
+                                        <span th:case="'ADJUST'" class="type-adj">조정</span>
+                                        <span th:case="*">-</span>
+                                    </span>
+                                </td>
+                                <td data-th="수량" th:text="${row.quantity != null ? #numbers.formatDecimal(row.quantity,1,'COMMA',0,'POINT') : '0'}"></td>
+                                <td data-th="로그 후 재고" th:text="${row.stockAfter != null ? #numbers.formatDecimal(row.stockAfter,1,'COMMA',0,'POINT') : '0'}"></td>
+                                <td data-th="입고번호">
+                                    <a th:if="${row.batchId != null}"
+                                       th:href="@{/inventory/batch/{bid}(bid=${row.batchId})}"
+                                       class="link">
+                                        <span th:text="${'IN-' + row.batchId}" class="fc-primary">입고번호</span>
+                                    </a>
+                                    <span th:if="${row.batchId == null}">-</span>
+                                </td>
+
+                                <!-- 비고 -->
+                                <td data-th="비고" th:text="${row.memo != null && row.memo != '' ? row.memo : '-'}"></td>
+
+                                <!-- 상세 버튼: 출고/조정만 팝업 -->
+                                <td data-th="버튼">
+                                    <!-- OUTGO: 헤더 기준 -->
+                                    <button type="button" class="btn log-detail-link"
+                                            th:if="${row.logType == 'OUTGO'}"
+                                            onclick="modalOpen('#detailModal');"
+                                            th:attr="data-log-id=${row.logId},
+                                                         data-log-type=${row.logType},
+                                                         data-log-date=${#temporals.format(row.logDate, 'yyyy-MM-dd HH:mm:ss')}">
+                                            <span class="fc-primary">
+                                                출고 상세
+                                            </span>
+                                    </button>
+
+                                    <!-- ADJUST: 조정 상세 -->
+                                    <button type="button" class="btn log-detail-link"
+                                            th:if="${row.logType == 'ADJUST'}"
+                                            onclick="modalOpen('#detailModal');"
+                                            th:attr="data-log-id=${row.logId},
+                                                         data-log-type=${row.logType},
+                                                         data-log-date=${#temporals.format(row.logDate, 'yyyy-MM-dd HH:mm:ss')}">
+                                            <span class="fc-primary">
+                                                조정 상세
+                                            </span>
+                                    </button>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+
+                    <div style="text-align:center;">
+                        <div th:replace="~{fragments/pagination :: pagination (${logs})}"></div>
+                    </div>
+                </section>
+            </div>
+        </main>
+
+        <div th:replace="~{fragments/footer :: footer}"></div>
+    </div>
+</div>
+
+<div id="detailModal" class="overlay">
+    <div class="popup">
+        <div class="popup-header">
+            <h2 class="popup-title">
+                <span id="detailModalTitle">상세 내역</span>
+            </h2>
+            <button type="button" class="btn transparent pop-close" onclick="modalClose('#detailModal');" title="팝업 닫기">
+                <svg viewBox="0 0 32 32" class="ico svg-close">
+                    <path fill-rule="evenodd" clip-rule="evenodd" d="m16 17.414 8.485 8.485 1.415-1.414L17.414 16 25.9 7.515 24.485 6.1 16 14.586 7.515 6.1 6.1 7.515 14.586 16l-8.485 8.485L7.515 25.9 16 17.413z" />
+                </svg>
+            </button>
+        </div>
+        <div class="popup-body">
+            <!-- 공통 요약 -->
+            <div id="detailSummary" class="pack-down">
+                <div class="pack-down-left">
+                    <table class="data-table">
+                        <tbody>
+                        <tr>
+                            <th scope="row">로그 ID</th>
+                            <td class="ta-r" id="detailLogId">-</td>
+                        </tr>
+                        <tr>
+                            <th scope="row">유형</th>
+                            <td class="ta-r" id="detailLogType">-</td>
+                        </tr>
+                        <tr>
+                            <th scope="row">일시</th>
+                            <td class="ta-r" id="detailLogDate">-</td>
+                        </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- 출고 -->
+            <div id="section-outgo" class="pack-down gap-8" style="display:none;">
+                <p class="pack-right gap-8">
+                    <span id="outgoSummaryQty">총 출고수량: -</span>
+                    <span id="outgoSummaryStore">대상 가맹점: -</span>
+                </p>
+                <div class="table-wrap">
+                    <table class="data-table fs-s">
+                        <thead>
+                            <tr>
+                                <th scope="row">LOT</th>
+                                <th scope="row">출고수량</th>
+                                <th scope="row">잔량</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td class="ta-l">LOT</td>
+                                <td class="ta-r">출고수량</td>
+                                <td class="ta-r">LOT잔량</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- 조정 -->
+            <div id="section-adjust" class="pack-down gap-8" style="display:none;">
+                <div class="table-wrap">
+                    <table class="data-table fs-s">
+                        <tbody>
+                            <tr>
+                                <th scope="row">조정 전</th>
+                                <td class="ta-r">조정 전</td>
+                            </tr>
+                            <tr>
+                                <th scope="row">조정 후</th>
+                                <td class="ta-r">조정 후</td>
+                            </tr>
+                            <tr>
+                                <th scope="row">증감</th>
+                                <td class="ta-r">증감</td>
+                            </tr>
+                            <tr>
+                                <th scope="row">사유코드</th>
+                                <td class="ta-r">사유코드</td>
+                            </tr>
+                            <tr>
+                                <th scope="row">메모</th>
+                                <td class="ta-r">메모</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div id="adjustModal" class="overlay">
+    <div class="popup">
+        <div class="popup-header">
+            <h2 class="popup-title"><span th:text="${material.name}">재료명</span> 재고 조정</h2>
+            <button type="button" class="btn transparent pop-close" onclick="modalClose('#adjustModal');" title="팝업 닫기">
+                <svg viewBox="0 0 32 32" class="ico svg-close">
+                    <path fill-rule="evenodd" clip-rule="evenodd" d="m16 17.414 8.485 8.485 1.415-1.414L17.414 16 25.9 7.515 24.485 6.1 16 14.586 7.515 6.1 6.1 7.515 14.586 16l-8.485 8.485L7.515 25.9 16 17.413z" />
+                </svg>
+            </button>
+        </div>
+        <div class="popup-body write-form">
+            <form>
+                <fieldset class="pack-down">
+                    <legend class="blind">재고조정폼</legend>
+                    <label class="field col">
+                        <span class="label medium required">변경 수량</span>
+                        <span class="insert">
+                            <input type="number" id="newQtyInput" class="input-text medium" step="1" min="0" placeholder="변경 후 수량 입력">
+                        </span>
+                    </label>
+                    <label class="field col">
+                        <span class="label medium required">조정 사유</span>
+                        <span class="insert">
+                            <select id="reasonSelect" class="select medium">
+                              <option value="MANUAL">수동 수정</option>
+                              <option value="DAMAGE">파손</option>
+                              <option value="LOSS">분실</option>
+                              <option value="ERROR">데이터 오류 정정</option>
+                            </select>
+                        </span>
+                    </label>
+
+                    <label class="field col">
+                        <span class="label medium" for="select1">비고</span>
+                        <span class="insert">
+                            <textarea id="memoInput" class="textarea medium" rows="4" cols="50" placeholder="비고 입력"></textarea>
+                        </span>
+                    </label>
+
+                    <div class="button-area pack-center">
+                        <button type="button" class="btn medium color1" id="adjustConfirm">확인</button>
+                        <button type="button" class="btn medium bdr-color1"  onclick="modalClose('#adjustModal');">취소</button>
+                    </div>
+                </fieldset>
+            </form>
+        </div>
+    </div>
+</div>
+<script>
+    (function () {
+      const materialIdEl  = document.getElementById('materialId');
+      const inventoryIdEl = document.getElementById('inventoryId');
+
+      const materialId  = materialIdEl  ? Number(materialIdEl.value)  : null;
+      const inventoryId = inventoryIdEl ? Number(inventoryIdEl.value) : null;
+
+      function setQS(obj) {
+        const p = new URLSearchParams(location.search);
+        Object.entries(obj).forEach(([k, v]) => {
+          if (v === '' || v == null) p.delete(k);
+          else p.set(k, v);
+        });
+        p.set('page', '0');
+        location.href = `/admin/inventory/log/${materialId}?` + p.toString();
+      }
+
+      function setQuick(days) {
+        const today = new Date();
+        const end = today.toISOString().slice(0, 10);
+        const from = new Date(today.getTime() - (days - 1) * 86400000)
+          .toISOString()
+          .slice(0, 10);
+        document.getElementById('startDate').value = from;
+        document.getElementById('endDate').value = end;
+      }
+
+      // 검색 버튼
+      const btnSearch = document.getElementById('btnSearch');
+      if (btnSearch) {
+        btnSearch.addEventListener('click', function () {
+          const type =
+            document.querySelector('input[name="type"]:checked')?.value || '';
+          const start = document.getElementById('startDate').value || '';
+          const end = document.getElementById('endDate').value || '';
+          setQS({ type, startDate: start, endDate: end });
+        });
+      }
+
+      // 타입 변경 즉시 검색
+      document.querySelectorAll('input[name="type"]').forEach((r) => {
+        r.addEventListener('change', () => btnSearch && btnSearch.click());
+      });
+
+      // 퀵 기간
+      const btnToday = document.getElementById('btnToday');
+      const btn7d = document.getElementById('btn7d');
+      const btn30d = document.getElementById('btn30d');
+
+      if (btnToday) {
+        btnToday.addEventListener('click', () => {
+          setQuick(1);
+          btnSearch && btnSearch.click();
+        });
+      }
+      if (btn7d) {
+        btn7d.addEventListener('click', () => {
+          setQuick(7);
+          btnSearch && btnSearch.click();
+        });
+      }
+      if (btn30d) {
+        btn30d.addEventListener('click', () => {
+          setQuick(30);
+          btnSearch && btnSearch.click();
+        });
+      }
+
+      // ================= 재고 조정 =================
+      const confirmBtn = document.getElementById('adjustConfirm');
+
+      if (confirmBtn) {
+        confirmBtn.addEventListener('click', function () {
+          if (!inventoryId) {
+            alert('재고 ID를 찾을 수 없습니다.');
+            return;
+          }
+
+          const newQty = document.getElementById('newQtyInput').value;
+          const reason = document.getElementById('reasonSelect').value;
+          const memo = document.getElementById('memoInput').value;
+
+          if (newQty === '' || newQty == null) {
+            alert('변경 수량을 입력하세요.');
+            return;
+          }
+
+          const payload = {
+            inventoryId: Number(inventoryId),
+            material: Number(materialId),
+            quantityAfter: Number(newQty),
+            reason: reason,
+            memo: memo,
+          };
+
+          fetch('/admin/API/inventory/adjust', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(payload),
+          })
+            .then(async (res) => {
+              const raw = await res.text();
+
+              if (!res.ok) {
+                throw new Error(raw || `HTTP ${res.status}`);
+              }
+
+              if (!raw) {
+                return { success: true };
+              }
+
+              try {
+                return JSON.parse(raw);
+              } catch (e) {
+                console.warn(
+                  '재고조정 API가 JSON이 아닌 응답을 반환했습니다:',
+                  raw
+                );
+                return { success: true };
+              }
+            })
+            .then(() => {
+              alert('재고가 조정되었습니다.');
+              location.reload();
+            })
+            .catch((err) => {
+              console.error('재고 조정 오류:', err);
+              alert('재고 조정 중 오류가 발생했습니다.\n' + err.message);
+            });
+        });
+      }
+    })();
+</script>
+<script th:inline="javascript">
+    document.addEventListener('DOMContentLoaded', function () {
+      const modal = document.querySelector('#detailModal');
+
+      // 요약 영역
+      const titleEl = document.getElementById('detailModalTitle');
+      const logIdEl = document.getElementById('detailLogId');
+      const logTypeEl = document.getElementById('detailLogType');
+      const logDateEl = document.getElementById('detailLogDate');
+
+      const materialName =
+        document.querySelector('.page-title span')?.textContent.trim() || '';
+
+      // 상세 섹션/테이블 (출고/조정만)
+      const sectionOutgo = document.getElementById('section-outgo');
+      const sectionAdjust = document.getElementById('section-adjust');
+
+      const outgoTbody = sectionOutgo.querySelector('tbody');
+      const adjustTbody = sectionAdjust.querySelector('tbody');
+
+      // 출고 요약 span
+      const outgoSummaryQty = document.getElementById('outgoSummaryQty');
+      const outgoSummaryStore = document.getElementById('outgoSummaryStore');
+
+      // 엔드포인트 베이스
+      const adjustBase = /*[[@{/inventory/log/adjust/}]]*/ '/inventory/log/adjust/';
+      const outBase = /*[[@{/inventory/log/out/}]]*/ '/inventory/log/out/';
+
+      function hideAllSections() {
+        sectionOutgo.style.display = 'none';
+        sectionAdjust.style.display = 'none';
+
+        outgoTbody.innerHTML = '';
+        adjustTbody.innerHTML = '';
+
+        if (outgoSummaryQty)
+          outgoSummaryQty.textContent = '총 출고수량: -';
+        if (outgoSummaryStore)
+          outgoSummaryStore.textContent = '대상 가맹점: -';
+      }
+
+      document.querySelectorAll('.log-detail-link').forEach((btn) => {
+        btn.addEventListener('click', async (e) => {
+          const typeRaw = e.currentTarget.dataset.logType || '';
+          const type = typeRaw.trim(); // OUTGO /ADJUST
+          const logId = e.currentTarget.dataset.logId;
+          const logDate = e.currentTarget.dataset.logDate;
+
+          hideAllSections();
+
+          // 요약 세팅
+          logIdEl.textContent = logId || '-';
+          logDateEl.textContent = logDate || '-';
+
+          if (type === 'OUTGO')
+            logTypeEl.textContent = '출고';
+          else if (type === 'ADJUST')
+            logTypeEl.textContent = '조정';
+          else
+            logTypeEl.textContent = type || '-';
+
+          // 제목: 재료명 + 유형
+          titleEl.textContent = materialName + ' ' + logTypeEl.textContent;
+
+          let url;
+          let targetTbody;
+          let renderFn;
+
+          if (type === 'ADJUST') {
+            // 조정 상세
+            sectionAdjust.style.display = 'block';
+            targetTbody = adjustTbody;
+            url = adjustBase + logId;
+
+            renderFn = (detail) => {
+              if (!detail) {
+                targetTbody.innerHTML =
+                  '<tr><td colspan="2">상세 데이터가 없습니다.</td></tr>';
+                return;
+              }
+
+              targetTbody.innerHTML = `
+                <tr>
+                    <th scope="row">조정 전</th>
+                    <td class="ta-r">${detail.quantityBefore}</td>
+                </tr>
+                <tr>
+                    <th scope="row">조정 후</th>
+                    <td class="ta-r">${detail.quantityAfter}</td>
+                </tr>
+                <tr>
+                    <th scope="row">증감</th>
+                    <td class="ta-r">${detail.difference}</td>
+                </tr>
+                <tr>
+                    <th scope="row">사유코드</th>
+                    <td class="ta-r">${detail.reason || '-'}</td>
+                </tr>
+                <tr>
+                    <th scope="row">메모</th>
+                    <td class="ta-r">${detail.memo || '-'}</td>
+                </tr>
+              `;
+            };
+          } else if (type === 'OUTGO') {
+            // 출고 LOT N건 상세 (헤더 logId 기준)
+            sectionOutgo.style.display = 'block';
+            targetTbody = outgoTbody;
+            url = outBase + logId;
+
+            // detail: [{lotNo, outDate, quantity, remainingQuantity, storeName}, ...]
+            renderFn = (list) => {
+              if (!Array.isArray(list) || list.length === 0) {
+                targetTbody.innerHTML =
+                  '<tr><td colspan="3">출고 LOT 상세가 없습니다.</td></tr>';
+                return;
+              }
+
+              // 요약 영역 세팅
+              const totalQty = list.reduce(
+                (sum, row) => sum + (Number(row.quantity) || 0),
+                0
+              );
+
+              const first = list[0] || {};
+              const storeNameText = first.storeName || '-';
+
+              if (outgoSummaryQty)
+                outgoSummaryQty.textContent = `총 출고수량: ${totalQty}`;
+              if (outgoSummaryStore)
+                outgoSummaryStore.textContent = `대상 가맹점: ${storeNameText}`;
+
+              // 테이블 본문
+              targetTbody.innerHTML = list
+                .map(
+                  (row) => `
+                    <tr>
+                      <td class="ta-l">${row.lotNo || '-'}</td>
+                      <td class="ta-r">${row.quantity}</td>
+                      <td class="ta-r">${row.remainingQuantity}</td>
+                    </tr>
+                  `
+                )
+                .join('');
+            };
+          } else {
+            // 알 수 없는 타입
+            return;
+          }
+
+          try {
+            const res = await fetch(url, {
+              headers: { 'X-Requested-With': 'XMLHttpRequest' },
+            });
+            const raw = await res.text();
+
+            if (!res.ok) {
+              console.error('상세 조회 오류', res.status, raw);
+              targetTbody.innerHTML =
+                '<tr><td colspan="3">상세 조회 중 오류가 발생했습니다.</td></tr>';
+              return;
+            }
+
+            let data;
+            try {
+              data = raw ? JSON.parse(raw) : null;
+            } catch (e2) {
+              console.error('JSON 파싱 실패', raw, e2);
+              targetTbody.innerHTML =
+                '<tr><td colspan="3">상세 데이터 파싱 중 오류가 발생했습니다.</td></tr>';
+              return;
+            }
+
+            renderFn(data);
+          } catch (e) {
+            console.error('상세 조회 fetch 실패', e);
+            targetTbody.innerHTML =
+              '<tr><td colspan="3">상세 조회 중 오류가 발생했습니다.</td></tr>';
+          }
+        });
+      });
+    });
+</script>
+</body>
+</html>

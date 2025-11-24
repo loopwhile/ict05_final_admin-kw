@@ -1,0 +1,12 @@
+/* ==== pagination ==== */
+.pagination{padding: 30px 0 0;text-align: center; display: inline-block;justify-content: center;}
+.pagination.pt10{padding: 10px 0 0;text-align: center;}
+.pagination a{display:inline-block;vertical-align:middle;width: 32px;height: 32px;line-height: 30px;font-size:13px;text-align:center;color:#898989;border-radius: 50%;}
+.pagination .on{background-color: #c12626;color:#fff;font-weight: 600;}
+.pagination .prev,.pagination .next,.pagination .first,.pagination .last{height:32px; width:24px;overflow:hidden;position:relative; font-size:0;}
+.pagination .prev{background:url(/admin/images/common/btn_prev3.png) no-repeat center center; margin-right:11px;}
+.pagination .next{background:url(/admin/images/common/btn_next3.png) no-repeat center center; margin-left:12px;}
+.pagination .first{background: url(/admin/images/common/btn_first3.png) no-repeat center center; margin-right: 11px;}
+.pagination .last{background: url(/admin/images/common/btn_last3.png) no-repeat center center; margin-left: 12px;}
+.pagination .front{background:url(/admin/images/common/btn_front.png) no-repeat center center; font-size:0;}
+.pagination .back{background:url(/admin/images/common/btn_back.png) no-repeat center center; font-size:0;}

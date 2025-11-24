@@ -1,0 +1,291 @@
+<!doctype html>     <!-- HTML5 문서 -->
+<html xmlns:th="http://www.thymeleaf.org"> <!-- Thymeleaf 문법(th: 접두어)을 쓸 수 있게 설정 -->
+<head>
+    <meta charset="UTF-8">  <!-- 글자 인코딩 -->
+    <meta name="format-detection" content="telephone=no">
+<!--    <meta http-equiv="X-UA-Compatible" content="IE=edge">-->
+    <meta name="viewport"
+          content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0"> <!-- 반응형 화면 설정 (폰/PC 화면 자동맞춤) -->
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">   <!-- 최신 버전의 Internet Explorer(IE) 엔진으로 렌더링(그리기) -->
+    <meta name="robots" content="noindex">  <!-- 검색 엔진이 이 페이지를 크롤링해도 검색 결과에 안 뜨게 하는 설정 -->
+    <meta name="googlebot" content="noindex">      <!-- 구글 로봇이 페이지 인덱스 금지 -->
+    <!-- Bootstrap CSS CDN -->
+    <th:block th:replace="~{fragments/head :: commonHead}"></th:block> <!-- fragments/head.html 파일의 commonHead 부분을 가져와서 사용 -->
+
+    <link href="/admin/css/toast.css" rel="stylesheet"/>
+    <script src="/admin/js/lib/jquery-3.2.1.min.js"></script>
+    <script src="/admin/js/toast.js"></script>
+</head>
+<body>
+<div id="wrap" class="frame">
+    <div th:replace="~{fragments/header :: header}"></div>
+
+    <div id="container" class="container">
+        <div class="title-bar">
+            <h2 class="page-title ellipsis">
+                메뉴 목록  (<span th:text="${menus.totalElements}">0</span>)
+            </h2>
+        </div>
+
+        <main id="content">
+            <div class="box-wrap">
+                <div id="search" class="search">
+                    <form name="frm" id="frm" method="get">
+                        <fieldset>
+                            <legend class="blind">검색</legend>
+                            <div class="pack-both">
+                                <div class="pack-left">
+                                    <input type="hidden" name="type" th:value="${menuSearchDTO.type}" />
+                                    <input type="hidden" name="menuShow" th:value="${menuSearchDTO.menuShow}" />
+
+                                    <input title="검색어" type="search" name="s" th:value="${menuSearchDTO.s}" class="input-text medium form-control" placeholder="상품명으로 검색" />
+                                    <input type="submit" value="검색" class="btn medium color1"/>
+                                </div>
+
+                                <div class="pack-left">
+                                    <!-- 카테고리 필터 -->
+                                    <div class="btn medium bdr-color1 btn-group btn-group-toggle" data-bs-toggle="buttons">
+
+                                        <!-- 전체 버튼 -->
+                                        <label class="btn medium"
+                                               th:classappend="${menuSearchDTO.menuCategoryId == null or menuSearchDTO.menuCategoryId == 0} ? ' active' : ''">
+                                            <input type="radio" name="menuCategoryId" value="0"
+                                                   th:checked="${menuSearchDTO.menuCategoryId == null or menuSearchDTO.menuCategoryId == 0}"
+                                                   onclick="setFilter(0)">
+                                            전체
+                                        </label>
+
+                                        <!-- DB 카테고리 반복 -->
+                                        <label th:each="c : ${menuCategories}" class="btn medium"
+                                               th:classappend="${menuSearchDTO.menuCategoryId == c.menuCategoryId} ? ' active'">
+                                            <input type="radio" name="menuCategoryId"
+                                                   th:value="${c.menuCategoryId}"
+                                                   th:checked="${menuSearchDTO.menuCategoryId == c.menuCategoryId}"
+                                                   th:attr="onclick=|setFilter(${c.menuCategoryId})|">
+                                            <span th:text="${c.menuCategoryName}">카테고리명</span>
+                                        </label>
+
+
+                                    </div>
+                                </div>
+
+                                <!-- 판매상태 필터 버튼 그룹 -->
+                                <div class="pack-left">
+                                    <div class="btn medium bdr-color1 btn-group btn-group-toggle" data-bs-toggle="buttons">
+
+                                        <!-- 상태 전체 -->
+                                        <label class="btn medium"
+                                               th:classappend="${menuSearchDTO.menuShow == null} ? ' active' : ''">
+                                            <input type="radio" name="menuShow" value=""
+                                                   th:checked="${menuSearchDTO.menuShow == null}"
+                                                   onclick="setShowFilter('')">
+                                            전체
+                                        </label>
+
+                                        <!-- 판매중 -->
+                                        <label class="btn medium"
+                                               th:classappend="${menuSearchDTO.menuShow != null
+                       and menuSearchDTO.menuShow == T(com.boot.ict05_final_admin.domain.menu.entity.MenuShow).SHOW}
+                       ? ' active' : ''">
+                                            <input type="radio" name="menuShow"
+                                                   th:value="${T(com.boot.ict05_final_admin.domain.menu.entity.MenuShow).SHOW}"
+                                                   th:checked="${menuSearchDTO.menuShow != null
+                       and menuSearchDTO.menuShow == T(com.boot.ict05_final_admin.domain.menu.entity.MenuShow).SHOW}"
+                                                   onclick="setShowFilter('SHOW')">
+                                            판매중
+                                        </label>
+
+                                        <!-- 중지 -->
+                                        <label class="btn medium"
+                                               th:classappend="${menuSearchDTO.menuShow != null
+                       and menuSearchDTO.menuShow == T(com.boot.ict05_final_admin.domain.menu.entity.MenuShow).HIDE}
+                       ? ' active' : ''">
+                                            <input type="radio" name="menuShow"
+                                                   th:value="${T(com.boot.ict05_final_admin.domain.menu.entity.MenuShow).HIDE}"
+                                                   th:checked="${menuSearchDTO.menuShow != null
+                       and menuSearchDTO.menuShow == T(com.boot.ict05_final_admin.domain.menu.entity.MenuShow).HIDE}"
+                                                   onclick="setShowFilter('HIDE')">
+                                            중지
+                                        </label>
+
+                                    </div>
+                                </div>
+
+
+                                <!-- 페이지 사이즈 -->
+                                <div class="pack-left page-size">
+                                    <select title="뷰사이즈" th:field="${menuSearchDTO.size}" class="select medium"
+                                            onchange="setPageSize(this.value)">
+                                        <option value="10">10</option>
+                                        <option value="30">30</option>
+                                        <option value="50">50</option>
+                                        <option value="100">100</option>
+                                    </select>
+                                    <span class="fs-ss">개씩 보기</span>
+                                </div>
+                            </div>
+                        </fieldset>
+                    </form>
+                </div>
+
+                <section class="pack-down">
+                    <div class="list-header pack-both">
+                        <div class="pack-right">
+                            <a href="/admin/menu/write" class="btn medium color2">상품 등록</a>
+                        </div>
+                    </div>
+
+                    <table class="data-table">
+                        <thead>
+                        <tr>
+                            <th scope="col" style="width:40px">
+                                <input type="checkbox" id="selectAll">
+                            </th>
+                            <th scope="col">판매상태</th>
+                            <th scope="col">상품코드</th>
+                            <th scope="col">메뉴명</th>
+                            <th scope="col">카테고리</th>
+                            <th scope="col">주재료</th>
+                            <th scope="col">금액(원)</th>
+                            <th scope="col">칼로리(kcal)</th>
+                            <th scope="col">관리</th>
+                        </tr>
+                        </thead>
+                        <tbody>
+                        <tr th:each="menu, stat : ${menus.content}">
+                            <td>
+                                <input type="checkbox" class="row-checkbox" th:value="${menu.menuId}">
+                            </td>
+                            <td>
+                                <span class="badge rounded-pill"
+                                    th:classappend="${menu.menuShow != null and menu.menuShow == T(com.boot.ict05_final_admin.domain.menu.entity.MenuShow).SHOW}
+                                                     ? ' bg-success text-white'
+                                                     : ' bg-danger text-white'"
+                                    th:text="${menu.menuShow != null and menu.menuShow == T(com.boot.ict05_final_admin.domain.menu.entity.MenuShow).SHOW}
+                                              ? '판매중' : '중지'">
+                                    판매상태
+                                </span>
+                            </td>
+
+
+                            <td th:text="${menu.menuCode}">상품코드</td>
+                            <td>
+                                <span class="fc-333 fw-600" th:text="${menu.menuName}">메뉴명</span>
+                            </td>
+                            <td th:text="${menu.menuCategoryName}">카테고리</td>
+                            <td th:text="${#strings.listJoin(menu.materialNames, ', ')}">주재료</td>
+                            <td th:text="${#numbers.formatInteger(menu.menuPrice, 0, 'COMMA')}">금액</td>
+                            <td th:text="${menu.menuKcal != null ? menu.menuKcal : 0}">칼로리</td>
+                            <td>
+                                <a th:href="@{/menu/detail/{menuId}(menuId=${menu.menuId})}" class="btn small bdr-gray">
+                                    <span class="material-symbols-outlined md-18">visibility</span>
+                                </a>
+                            </td>
+                        </tr>
+                        </tbody>
+                    </table>
+                    <div style="text-align: center;">
+                        <div th:replace="~{fragments/pagination :: pagination (pageVars=${menus})}"></div>
+                    </div>
+                </section>
+            </div>
+        </main>
+        <div th:replace="~{fragments/footer :: footer}"></div>
+    </div><!-- // #container  -->
+</div><!--#wrap.frame-->
+
+<script>
+    const selectAll = document.getElementById('selectAll');     // 전체선택 체크박스
+
+    const getRowCheckboxes = () => Array.from(document.querySelectorAll('.row-checkbox'));
+
+    selectAll.addEventListener('change', () => {   // 전체선택 누르면 → 모든 체크박스 ON/OFF
+        const all = getRowCheckboxes();
+        all.forEach(cb => cb.checked = selectAll.checked);
+        selectAll.indeterminate = false;
+    });
+
+    document.addEventListener('change', (e) => {    // 개별 체크박스 하나씩 클릭
+        if (!e.target.classList.contains('row-checkbox')) return;
+        updateSelectAllState();
+    });
+
+    function updateSelectAllState() {       // 전체 체크박스 중 체크된 개수를 세어서 각각 처리
+        const all = getRowCheckboxes();
+        if (all.length === 0) {
+            selectAll.checked = false;
+            selectAll.indeterminate = false;
+            return;
+        }
+        const checkedCount = all.filter(cb => cb.checked).length;
+        if (checkedCount === 0) {
+            selectAll.checked = false;
+            selectAll.indeterminate = false;
+        } else if (checkedCount === all.length) {
+            selectAll.checked = true;
+            selectAll.indeterminate = false;
+        } else {
+            selectAll.checked = false;
+            selectAll.indeterminate = true;
+        }
+    }
+
+    document.addEventListener('DOMContentLoaded', updateSelectAllState);    // 페이지가 로드될 때(처음 화면 열릴 때) 전체선택 상태 갱신
+</script>
+
+<script>
+    function setFilter(catId) {
+        const frm = document.getElementById('frm');
+        const catInput = frm.querySelector('[name="menuCategoryId"]');
+        if (catInput) catInput.value = catId;
+
+        const pageInput = document.createElement('input');
+        pageInput.type = 'hidden';
+        pageInput.name = 'page';
+        pageInput.value = '1';
+        frm.appendChild(pageInput);
+
+        frm.submit();
+    }
+
+    function setShowFilter(showVal) {
+        const frm = document.getElementById('frm');
+        let showInput = frm.querySelector('[name="menuShow"]');
+        if (!showInput) {
+            showInput = document.createElement('input');
+            showInput.type = 'hidden';
+            showInput.name = 'menuShow';
+            frm.appendChild(showInput);
+        }
+        showInput.value = showVal;
+
+        const pageInput = document.createElement('input');
+        pageInput.type = 'hidden';
+        pageInput.name = 'page';
+        pageInput.value = '1';
+        frm.appendChild(pageInput);
+
+        frm.submit();
+    }
+
+    // 🔽 새로 추가
+    function setPageSize(size) {
+        const frm = document.getElementById('frm');
+        // page=1 로 초기화
+        const pageInput = document.createElement('input');
+        pageInput.type = 'hidden';
+        pageInput.name = 'page';
+        pageInput.value = '1';
+        frm.appendChild(pageInput);
+
+        frm.submit(); // size 값은 select(name="size")가 자동으로 같이 전송
+    }
+
+    document.addEventListener('change', e => {
+        if (e.target.name === 'menuCategoryId') setFilter(e.target.value);
+        if (e.target.name === 'menuShow')       setShowFilter(e.target.value);
+    });
+</script>
+
+</body>
+</html>

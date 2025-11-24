@@ -1,0 +1,9 @@
+com.boot.ict05_final_admin
+com.boot.ict05_final_admin.common
+com.boot.ict05_final_admin.config
+com.boot.ict05_final_admin.domain.home.controller
+com.boot.ict05_final_admin.domain.notice.controller
+com.boot.ict05_final_admin.domain.notice.dto
+com.boot.ict05_final_admin.domain.notice.entity
+com.boot.ict05_final_admin.domain.notice.repository
+com.boot.ict05_final_admin.domain.notice.service

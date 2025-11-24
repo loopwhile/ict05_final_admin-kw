@@ -1,0 +1,40 @@
+@charset "utf-8";
+/* ICT TeamONE _ 토스트랩 _ KimJuyeon _ 20251014 */
+
+/* reset */
+@import url(lib/reset.css);
+@import url(_fonts.css);
+@import url(_icons.css);
+@import url(_colors.css);
+@import url(_vars.css);
+@import url(_button.css);
+@import url(_form.css);
+@import url(_layout.css);
+@import url(_global.css);
+
+
+/* 관리자 로그인 */
+#wrap.login {background-color: #E8DFD8;
+	display: flex;
+	justify-content: flex-end;
+	align-items: stretch;
+}
+#wrap.login #container	{width: 50%; min-width: 360px; max-width: 480px; min-height: var(--vh100); padding: 3rem; background: #fff;
+	display: flex;
+	justify-content: center;
+	align-items: center;
+}
+#wrap.login #content,
+#wrap.login .login-form .fieldset	{
+	display: flex;
+	flex-direction: column;
+}
+#wrap.login #content				{margin: 16px 0; gap: 16px;}
+#wrap.login .logo					{display: block; height: var(--large);}
+#wrap.login .login-form .fieldset	{gap: 12px}
+#wrap.login .label					{font-size: smaller; font-weight: 400;}
+#wrap.login .btn.large				{width: 100%;}
+#wrap.login #footer					{
+	flex-direction: column;
+}
+

@@ -1,0 +1,156 @@
+<!doctype html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="format-detection" content="telephone=no">
+    <meta name="viewport"
+          content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <meta name="robots" content="noindex">
+    <meta name="googlebot" content="noindex">
+    <th:block th:replace="~{fragments/head :: commonHead}"></th:block>
+
+    <link href="/admin/css/toast.css" rel="stylesheet"/>
+    <script src="/admin/js/lib/jquery-3.2.1.min.js"></script>
+    <script src="/admin/js/toast.js"></script>
+</head>
+<body>
+<div id="wrap" class="frame">
+    <div th:replace="~{fragments/header :: header}"></div>
+
+    <div id="container" class="container" th:object="${menu}">
+        <div class="title-bar">
+            <h2 class="page-title ellipsis">메뉴 상세보기</h2>
+        </div>
+
+        <main id="content" class="max-900">
+            <div class="box-wrap">
+                <div class="pack-down gap-20">
+
+                    <!-- 메뉴명 -->
+                    <div class="">
+                        <span class="label medium">메뉴명</span>
+                        <span th:text="${menu.menuName}">메뉴명</span>
+                    </div>
+
+                    <!-- 영문명 / 판매상태 -->
+                    <div class="row-2">
+                        <div class="field pack-down col">
+                            <span class="fs-ss fc-999">영문명</span>
+                            <span th:text="${menu.menuNameEnglish}">영문명</span>
+                        </div>
+
+                        <div class="field pack-down col">
+                            <span class="fs-ss fc-999">판매상태</span>
+                            <span th:class="'badge rounded-pill ' + (*{menuShow.name()} == 'SHOW' ? 'bg-success text-white' : 'bg-danger text-white')"
+                                  th:text="${menu.menuShow.description}">판매상태
+                            </span>
+                        </div>
+                    </div>
+
+                    <!-- 카테고리 / 상품코드 -->
+                    <div class="row-2">
+                        <div class="field pack-down col">
+                            <span class="fs-ss fc-999">카테고리</span>
+                            <span th:text="${menu.menuCategoryName != null ? menu.menuCategoryName : '카테고리 없음'}"></span>
+                        </div>
+                        </div>
+
+                        <div class="field pack-down col">
+                            <span class="fs-ss fc-999">상품코드</span>
+                            <span th:text="${menu.menuCode}">상품코드</span>
+                        </div>
+                    </div>
+
+                    <!-- 가격 / 칼로리 -->
+                    <div class="row-2">
+                        <div class="field pack-down col">
+                            <span class="fs-ss fc-999">가격(원)</span>
+                            <span th:text="${menu.menuPrice != null ? #numbers.formatInteger(menu.menuPrice.longValue(), 0, 'COMMA') : '0'}">
+                              가격(원)
+                            </span>
+
+                        </div>
+
+                        <div class="field pack-down col">
+                            <span class="fs-ss fc-999">칼로리(kcal)</span>
+                            <span th:text="${menu.menuKcal}">칼로리(kcal)</span>
+                        </div>
+                    </div>
+
+                    <!-- 설명 -->
+                    <div class="field pack-down col">
+                        <span class="fs-ss fc-999">설명</span>
+                        <span th:text="${menu.menuInformation}"> 설명</span>
+                    </div>
+
+                    <!-- 재료구성 -->
+                    <div class="card p-3">
+                        <h5 class="mb-3">재료구성</h5>
+
+                        <div class="row">
+                            <!-- 주재료 -->
+                            <div class="col-md-6">
+                                <strong class="d-inline-block mb-2">주재료 구성</strong>
+
+                                <ul class="list-ingredients"
+                                    th:if="${menu.mainMaterials != null and !#lists.isEmpty(menu.mainMaterials)}">
+                                    <li th:each="it : ${menu.mainMaterials}">
+                                        <!-- 표기명: itemName 우선, 없으면 materialName -->
+                                        <span class="nm" th:text="${#strings.isEmpty(it.itemName) ? it.materialName : it.itemName}">
+                                            항목명
+                                        </span>
+                                        <span class="qty">
+                                            <span th:text="${it.recipeQty != null ?  #numbers.formatDecimal(it.recipeQty, 1, 2) : '0.00'}">0.00</span>
+                                            <span th:text="${it.recipeUnit}">g</span>
+                                        </span>
+                            </li>
+                                </ul>
+                                <div class="text-muted small"
+                                     th:if="${menu.mainMaterials == null or #lists.isEmpty(menu.mainMaterials)}">
+                                    주재료 정보가 없습니다.
+                                </div>
+                            </div>
+
+                            <!-- 소스 -->
+                            <div class="col-md-6">
+                                <strong class="d-inline-block mb-2">소스 구성</strong>
+
+                                <ul class="list-ingredients"
+                                    th:if="${menu.sauceMaterials != null and !#lists.isEmpty(menu.sauceMaterials)}">
+                                    <li th:each="it : ${menu.sauceMaterials}">
+                                        <span class="nm" th:text="${#strings.isEmpty(it.itemName) ? it.materialName : it.itemName}">
+                                            항목명
+                                        </span>
+                                        <span class="qty">
+                                            <span th:text="${it.recipeQty != null ? #numbers.formatDecimal(it.recipeQty, 1, 2) : '0.00'}">0.00</span>
+                                            <span th:text="${it.recipeUnit}">g</span>
+                                         </span>
+                                    </li>
+                                </ul>
+
+                                <div class="text-muted small"
+                                     th:if="${menu.sauceMaterials == null or #lists.isEmpty(menu.sauceMaterials)}">
+                                    소스 정보가 없습니다.
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+
+                </div><!-- /.pack-down -->
+            </div><!-- /.box-wrap -->
+
+            <div class="button-area pack-both" style="display:flex; justify-content:space-between; gap:20px; margin-top:20px;">
+                <a href="/admin/menu/list" class="btn medium color1">목록</a>
+                <a th:href="@{/menu/modify/{id}(id=${menu.menuId})}"
+                   class="btn medium color2">수정</a>
+            </div>
+        </main>
+
+        <div th:replace="~{fragments/footer :: footer}"></div>
+    </div>
+</div>
+</body>
+</html>

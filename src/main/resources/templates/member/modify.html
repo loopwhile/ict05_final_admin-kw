@@ -1,0 +1,203 @@
+<!doctype html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="format-detection" content="telephone=no">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="viewport"
+          content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <meta name="robots" content="noindex">
+    <meta name="googlebot" content="noindex">
+    <title>토스트랩 관리자</title>
+
+    <th:block th:replace="~{fragments/head :: commonHead}"></th:block>
+
+    <!-- favicon -->
+    <link rel="icon" th:href="@{/images/logo/favi_ad.png}" type="image/x-icon"/>
+
+    <!-- CSS -->
+    <link rel="stylesheet" th:href="@{/css/toast.css}" />
+
+    <!-- JS -->
+    <script th:src="@{/js/lib/jquery-3.2.1.min.js}"></script>
+    <script th:src="@{/js/toast.js}"></script>
+    <script src="https://t1.daumcdn.net/mapjsapi/bundle/postcode/prod/postcode.v2.js"></script>
+    <style>
+        .error{display:block;margin-top:4px;font-size:12px;color:#ef4444}
+    </style>
+</head>
+<body>
+<div id="wrap" class="frame">
+<div th:replace="~{fragments/header :: header}"></div>
+
+    <div id="container" class="container">
+        <div class="title-bar">
+            <h2 class="page-title ellipsis">회원 수정(<span th:text="${member.name}">회원명</span>)</h2>
+        </div>
+
+        <main id="content" class="max-900">
+            <div class="write-form box-wrap">
+                <form name="inputform" id="inputform">
+                    <input type="hidden" name="id" th:value="${member.id}">
+
+                    <fieldset class="pack-down gap-12">
+                        <div class="pack-down gap-20">
+                            <div class="pack-down col">
+                                <label class="fs-ss fc-999" for="memberName">사원명</label>
+                                <input type="text" id="memberName" class="input-text large"
+                                       name="memberName"
+                                       th:value="${member.name}"
+                                       title="회원명" placeholder="회원명 입력" />
+                                <small id="memberNameError" class="error" aria-live="polite"></small>
+                            </div>
+
+                            <div class="row col-2">
+
+                                <div class="pack-down col">
+                                    <span class="fs-ss fc-999">ID</span>
+                                    <span th:text="${member.id}">ID</span>
+                                </div>
+
+                                <div class="pack-down col">
+                                    <label class="fs-ss fc-999" for="memberEmail">이메일</label>
+
+                                    <input type="text" name="memberEmail" id="memberEmail" class="input-text medium"
+                                           th:value="${member.email}"
+                                           title="이메일" placeholder="이메일 입력" />
+                                    <small id="memberEmailError" class="error" aria-live="polite"></small>
+                                </div>
+                            </div>
+
+                            <div class="row col-2">
+                                <div class="pack-down col">
+                                    <label class="fs-ss fc-999" for="memberPhone">연락처</label>
+                                    <input type="text" name="memberPhone" id="memberPhone" class="input-text medium"
+                                           th:value="${member.phone}"
+                                           title="연락처" placeholder="연락처 입력" />
+                                    <small id="memberPhoneError" class="error" aria-live="polite"></small>
+                                </div>
+                                <div class="pack-down col">
+                                    <label class="fs-ss fc-999" for="memberStatus">상태</label>
+
+                                    <select name="memberStatus" id="memberStatus" class="select medium">
+                                        <option>선택</option>
+                                        <option th:each="c : ${MemberStatus}"
+                                                th:value="${c.name()}"
+                                                th:text="${c.description}"
+                                                th:selected="${c == member.status}">
+                                            일반
+                                        </option>
+                                    </select>
+                                    <small id="memberStatusError" class="error" aria-live="polite"></small>
+                                </div>
+                            </div>
+                        </div><!--pack-down.gap-12-->
+
+                        <div class="button-area pack-center">
+                            <button type="submit" class="btn large color1">저장</button>
+                        </div>
+                    </fieldset>
+                </form>
+            </div><!--.write-form.box-wrap -->
+            <div class="button-area pack-both">
+                <a href="/admin/member/list" class="btn bdr-color1">목록으로</a>
+            </div>
+        </main>
+    <div th:replace="~{fragments/footer :: footer}"></div>
+</div><!-- // #container  -->
+</div><!--#wrap.frame-->
+<script>
+    // ---- helpers ----
+    const getValue = (id) => document.getElementById(id);
+
+    function setError(fieldId, msg) {
+      const input = getValue(fieldId);
+      const box   = getValue(fieldId + 'Error');
+      if (input) input.classList.add('is-error');
+      if (box)   box.textContent = msg || '';
+    }
+    function clearFieldError(fieldId) {
+      const input = getValue(fieldId);
+      const box   = getValue(fieldId + 'Error');
+      if (input) input.classList.remove('is-error');
+      if (box)   box.textContent = '';
+    }
+    function clearAllErrors() {
+      document.querySelectorAll('.is-error').forEach(el => el.classList.remove('is-error'));
+      document.querySelectorAll('[id$="Error"]').forEach(el => el.textContent = '');
+    }
+
+    // ---- 클라이언트 검증 ----
+    function clientValidate() {
+      const errs = {};
+
+      const name   = (getValue('memberName')?.value || '').trim();
+      const email  = (getValue('memberEmail')?.value || '').trim();
+      const phone  = (getValue('memberPhone')?.value || '').trim();
+      const status = (getValue('memberStatus')?.value || '').trim();
+
+      if (!name)  errs.memberName  = '회원 이름을 입력해주세요';
+      if (!email) errs.memberEmail = '이메일을 입력해주세요';
+      if (!phone) errs.memberPhone = '연락처를 입력해주세요';
+      if (!status || status === '선택') errs.memberStatus = '상태를 선택해주세요';
+
+      if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+        errs.memberEmail = '이메일 형식이 올바르지 않습니다';
+      }
+      if (phone && !/^[0-9\-]{9,13}$/.test(phone)) {
+        errs.memberPhone = '연락처는 숫자와 하이픈만 입력해주세요';
+      }
+
+      return errs;
+    }
+
+    // ---- 입력 중 에러 자동 해제 ----
+    (function wireLiveClear() {
+      const form = getValue('inputform');
+      if (!form) return;
+      form.addEventListener('input',  (e) => { if (e.target?.id) clearFieldError(e.target.id); });
+      form.addEventListener('change', (e) => { if (e.target?.id) clearFieldError(e.target.id); });
+    })();
+
+    // ---- 제출 ----
+    document.getElementById('inputform').addEventListener('submit', async function (e) {
+      e.preventDefault();
+      clearAllErrors();
+
+      const errs = clientValidate();
+      const keys = Object.keys(errs);
+      if (keys.length > 0) {
+        keys.forEach(k => setError(k, errs[k]));
+        const first = keys[0];
+        const el = document.getElementById(first);
+        if (el) el.focus();
+        return;
+      }
+
+      try {
+        const formData = new FormData(this);
+
+        // 서버 엔드포인트: 회원 수정
+        const res = await fetch('/admin/API/member/modify', {
+          method: 'POST',
+          body: formData,
+        });
+        if (!res.ok) throw new Error('서버 응답 오류: ' + res.status);
+
+        const data = await res.json();
+        const id = data?.id ?? formData.get('id');
+        alert('수정 성공: ' + id);
+
+        // 상세 페이지로 이동
+        window.location.href = '/admin/member/detail/' + id;
+      } catch (err) {
+        console.error(err);
+        alert('수정 실패');
+      }
+    });
+</script>
+
+</body>
+</html>

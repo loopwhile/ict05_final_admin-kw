@@ -1,0 +1,176 @@
+<!doctype html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="robots" content="noindex">
+    <th:block th:replace="~{fragments/head :: commonHead}"></th:block>
+
+    <link href="/admin/css/toast.css" rel="stylesheet"/>
+    <script src="/admin/js/lib/jquery-3.2.1.min.js"></script>
+    <script src="/admin/js/toast.js"></script>
+    <script src="/admin/js/excel-download.js" defer></script>
+</head>
+<body>
+<div id="wrap" class="frame">
+    <div th:replace="~{fragments/header :: header}"></div>
+
+    <div id="container" class="container">
+        <div class="title-bar">
+            <div class="pack-both">
+                <h2 class="page-title ellipsis">본사 재고 목록</h2>
+
+                <a href="/admin/inventory/store/list" class="btn medium color2">가맹점 재고 목록</a>
+            </div>
+        </div>
+
+        <main id="content">
+            <div class="box-wrap">
+                <!-- 검색 영역 -->
+                <div id="search" class="search">
+                    <form name="frm" id="frm" method="get">
+                        <fieldset>
+                            <legend class="blind">검색</legend>
+                            <div class="pack-both rw-mo-direction-column">
+                                <div class="pack-left">
+                                    <input title="검색어" type="search"
+                                           name="s" th:value="${inventorySearchDTO.s}"
+                                           class="input-text medium form-control"
+                                           placeholder="재료명, 카테고리 검색" />
+                                    <input type="submit" value="검색" class="btn medium color1"/>
+                                </div>
+
+                                <div class="pack-left">
+                                    <!-- 상태 필터 -->
+                                    <div class="btn medium bdr-color1 btn-group btn-group-toggle" data-bs-toggle="buttons">
+                                        <label class="btn medium"
+                                               th:classappend="${inventorySearchDTO.status == null} ? ' active' : ''">
+                                            <input type="radio" name="status" value=""
+                                                   th:checked="${inventorySearchDTO.status == null}"
+                                                   onclick="setFilter('')">전체
+                                        </label>
+
+                                        <label class="btn medium"
+                                               th:classappend="${inventorySearchDTO.status?.name() == 'SUFFICIENT'} ? ' active' : ''">
+                                            <input type="radio" name="status" value="SUFFICIENT"
+                                                   th:checked="${inventorySearchDTO.status?.name() == 'SUFFICIENT'}"
+                                                   onclick="setFilter('SUFFICIENT')">충분
+                                        </label>
+
+                                        <label class="btn medium"
+                                               th:classappend="${inventorySearchDTO.status?.name() == 'LOW'} ? ' active' : ''">
+                                            <input type="radio" name="status" value="LOW"
+                                                   th:checked="${inventorySearchDTO.status?.name() == 'LOW'}"
+                                                   onclick="setFilter('LOW')">부족
+                                        </label>
+
+                                        <label class="btn medium"
+                                               th:classappend="${inventorySearchDTO.status?.name() == 'SHORTAGE'} ? ' active' : ''">
+                                            <input type="radio" name="status" value="SHORTAGE"
+                                                   th:checked="${inventorySearchDTO.status?.name() == 'SHORTAGE'}"
+                                                   onclick="setFilter('SHORTAGE')">품절
+                                        </label>
+                                    </div>
+
+                                    <!-- 페이지 사이즈 -->
+                                    <div class="pack-left page-size">
+                                        <select title="뷰사이즈" th:field="${inventorySearchDTO.size}" class="select medium"
+                                                onchange="setPageSize(this.value)">
+                                            <option value="10">10</option>
+                                            <option value="30">30</option>
+                                            <option value="50">50</option>
+                                            <option value="100">100</option>
+                                        </select>
+                                        <span class="fs-ss">개씩 보기</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </fieldset>
+                    </form>
+                </div>
+
+                <!-- 목록 테이블 -->
+                <section class="pack-down">
+                    <div class="list-header pack-both">
+                        <div class="pack-left">
+                            <a href="/admin/inventory/in/write" class="btn medium color2">입고 등록</a>
+                        </div>
+
+                        <div class="pack-left">
+                            <button type="button" class="btn medium bdr-color2"
+                                    data-excel-endpoint="/API/inventory/download"
+                                    data-form-id="frm"
+                                    onclick="excelDownload(this)">엑셀다운로드</button>
+                        </div>
+                    </div>
+
+                    <table class="data-table">
+                        <thead>
+                        <tr>
+                            <th scope="col">재료코드</th>
+                            <th scope="col">카테고리</th>
+                            <th scope="col">재료명</th>
+                            <th scope="col">현재고</th>
+                            <th scope="col">상태</th>
+                            <th scope="col">버튼</th>
+                        </tr>
+                        </thead>
+                        <tbody>
+                        <tr th:each="inventory : ${inventories.content}">
+                            <td data-th="재료코드" th:text="${inventory.materialId}">재료코드</td>
+                            <td data-th="카테고리" th:text="${inventory.categoryName}">카테고리</td>
+                            <td data-th="재료명" th:text="${inventory.materialName}">재료명</td>
+                            <td data-th="현재고">
+                                <span th:text="${inventory.quantity != null ? #numbers.formatDecimal(inventory.quantity,1,'COMMA',0,'POINT') : '0'}"></span>
+                                <span th:text="${inventory.materialSalesUnit}" class="fs-s fc-999">판매단위</span>
+                            </td>
+                            <td data-th="상태">
+                                <span th:class="|badge rounded-pill ${
+                                                    inventory.status != null && inventory.status.name() == 'SUFFICIENT' ? 'bg-success' :
+                                                    (inventory.status != null && inventory.status.name() == 'LOW' ? 'bg-warning' : 'bg-danger')
+                                                }|"
+                                      th:text="${inventory.status != null ? inventory.status.description : '미지정'}">
+                                </span>
+                            </td>
+                            <td data-th="버튼">
+                                <!-- 입출고 로그 -->
+                                <a th:href="@{/inventory/log/{mid}(mid=${inventory.materialId})}"
+                                   class="btn small bdr-gray" title="입출고 로그">
+                                    <span class="material-symbols-outlined md-18">visibility</span>
+                                </a>
+
+                                <!-- LOT 현황 -->
+                                <a th:href="@{/inventory/batch-status/{mid}(mid=${inventory.materialId})}"
+                                   class="btn small bdr-gray" title="LOT 현황">
+                                    <span class="material-symbols-outlined md-18">pallet</span>
+                                </a>
+                            </td>
+                        </tr>
+                        </tbody>
+                    </table>
+
+                    <div style="text-align:center;">
+                        <div th:replace="~{fragments/pagination :: pagination (${inventories})}"></div>
+                    </div>
+                </section>
+            </div>
+        </main>
+        <div th:replace="~{fragments/footer :: footer}"></div>
+    </div>
+</div>
+
+<script>
+    function setFilter(status, path){
+        const p=new URLSearchParams(location.search);
+        p.set('status',status||'');
+        location.href=(path||location.pathname)+'?'+p;
+    }
+    function setPageSize(size, path){
+        const p=new URLSearchParams(location.search);
+        p.delete('page');p.set('size',size);
+        location.href=(path||location.pathname)+'?'+p;
+    }
+</script>
+</body>
+</html>

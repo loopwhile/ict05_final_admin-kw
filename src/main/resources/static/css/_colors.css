@@ -1,0 +1,39 @@
+@charset "UTF-8";
+/* ICT TeamONE _ 토스트랩 _ KimJuyeon _ 20251014 */
+
+:root {
+  --body-bg-color: #FAFAF9;
+  --body-color: #6D645B;
+  --body-dark: #443D37;
+
+  --title-color: #2c2923;
+
+  /* orange*/
+  --color1: #FF7235;
+  --color1-dark: #DD5B22;     /*.onoff Gradient*/
+  --color1-light: #FF9262;    /*.onoff Gradient*/
+
+  /* blue */
+  --color2: #6DB5CA;
+  --color2-dark: #457F90;     /*.loading*/
+
+  /* browon */
+  --color3: #BB4613;
+  --color3-dark: #993308;
+
+  /* gray */
+  --gray: #BFB5AC;
+  --gray-dark: #AAA097;
+
+  /* border */
+  --bdr-color: #D3CAC2;
+
+
+  /* color Override */
+  --bs-body-color: #6D645B;
+  --bs-btn-color: #595049;
+  --bs-success-rgb: 46, 204, 113;   /*초록*/
+  --bs-primary-rgb: 13, 110, 253;   /*파랑*/
+  --bs-secondary-rgb: 170, 160, 151;   /*회색-*/
+  --bs-warning-rgb: 244, 180, 0;   /*노랑*/
+}

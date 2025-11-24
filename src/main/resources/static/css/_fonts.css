@@ -1,0 +1,15 @@
+@charset "utf-8";
+/* ICT TeamONE _ 토스트랩 _ KimJuyeon _ 20251014 */
+
+@import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap');
+
+/* 국문 */
+@font-face {
+  font-family: 'Pretendard Variable';
+  font-weight: 45 920;
+  font-style: normal;
+  font-display: swap;
+  src: url('../fonts/Pretendard-1.3.5/web/variable/woff2/PretendardVariable.woff2') format('woff2-variations');
+  unicode-range: U+AC00-D7A3,U+005B,U+005D,U+002F,U+0025;
+}

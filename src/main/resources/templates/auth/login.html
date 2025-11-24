@@ -1,0 +1,99 @@
+<!doctype html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1"/>
+    <title>FranFriend Admin — 로그인</title>
+
+    <!-- Tailwind CDN (개발용) -->
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <!-- 리액트에서 쓰던 색상 이름을 간단 매핑 -->
+    <style>
+        :root{
+            --kpi-red:#ef4444;     /* red-500 */
+            --kpi-green:#22c55e;   /* green-500 */
+            --kpi-purple:#7c3aed;  /* purple-600 */
+            --light-gray:#f5f7fb;
+            --dark-gray:#6b7280;   /* gray-500 */
+        }
+        .bg-kpi-red{ background-color:var(--kpi-red); }
+        .hover\:bg-kpi-red-600:hover{ background-color:#dc2626; }
+        .bg-kpi-purple{ background-color:var(--kpi-purple); }
+        .text-dark-gray{ color:var(--dark-gray); }
+        .bg-light-gray{ background-color:var(--light-gray); }
+    </style>
+</head>
+<body class="min-h-screen bg-light-gray flex items-center justify-center">
+<div class="w-full max-w-md px-6">
+    <div class="bg-white rounded-2xl shadow-xl p-8">
+        <!-- 헤더 -->
+        <div class="text-center mb-6">
+            <div class="w-14 h-14 bg-kpi-purple rounded-2xl mx-auto mb-3 flex items-center justify-center">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-7 w-7 text-white" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M12 12a5 5 0 100-10 5 5 0 000 10zM3 22a9 9 0 1118 0H3z"/>
+                </svg>
+            </div>
+            <h1 class="text-2xl font-bold text-gray-900">관리자 로그인</h1>
+            <p class="text-sm text-dark-gray mt-1">FranFriend ERP 본사 콘솔</p>
+        </div>
+
+        <!-- 알림 -->
+        <div id="msg" class="hidden mb-4 text-sm rounded-md px-3 py-2"></div>
+        <!-- 서버 리다이렉트 시에도 바로 보이게(기존 JS와 병행) -->
+        <div th:if="${param.error}"  class="mb-4 text-sm rounded-md px-3 py-2 bg-red-50  text-red-700  border border-red-200">이메일 또는 비밀번호가 올바르지 않습니다.</div>
+        <div th:if="${param.logout}" class="mb-4 text-sm rounded-md px-3 py-2 bg-green-50 text-green-700 border border-green-200">로그아웃 되었습니다.</div>
+
+        <!-- 폼 -->
+        <form id="loginForm" class="space-y-4" th:action="@{/login}" method="post">
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">이메일</label>
+                <input id="email" name="email" type="email" required placeholder="admin@franfriend.com" autocomplete="username"
+                       class="w-full h-11 rounded-lg border border-gray-300 px-3 focus:outline-none focus:ring-2 focus:ring-indigo-500"/>
+            </div>
+
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">비밀번호</label>
+                <input id="password" name="password" type="password" required placeholder="비밀번호" autocomplete="current-password"
+                       class="w-full h-11 rounded-lg border border-gray-300 px-3 focus:outline-none focus:ring-2 focus:ring-indigo-500"/>
+            </div>
+
+            <!-- CSRF 토큰 -->
+            <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}" />
+
+            <button type="submit"
+                    class="w-full h-11 rounded-lg font-medium text-white bg-kpi-red hover:bg-kpi-red-600">
+                로그인
+            </button>
+        </form>
+
+        <p class="text-center text-sm text-dark-gray mt-2">
+            아직 계정이 없나요?
+            <a href="/admin/register" class="text-kpi-red underline">회원가입</a>
+        </p>
+
+        <!-- 푸터 -->
+        <p class="text-xs text-dark-gray text-center mt-6">
+            로그인 문제는 시스템 관리자에게 문의하세요.
+        </p>
+    </div>
+</div>
+
+<script>
+    const $ = (q) => document.querySelector(q);
+    const msg = $("#msg");
+
+    function showMsg(text, ok=false){
+        msg.textContent = text;
+        msg.className = "mb-4 text-sm rounded-md px-3 py-2 " + (ok
+            ? "bg-green-50 text-green-700 border border-green-200"
+            : "bg-red-50 text-red-700 border border-red-200");
+        msg.classList.remove("hidden");
+    }
+    // 쿼리 파라미터로 에러 전달받은 경우 표시 (?error=1)
+    const p = new URLSearchParams(window.location.search);
+    if(p.get("error"))  showMsg("세션이 만료되었거나 권한이 없습니다.");
+    if(p.get("logout")) showMsg("로그아웃 되었습니다.", true);
+</script>
+</body>
+</html>

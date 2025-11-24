@@ -1,0 +1,109 @@
+version: "3.8"
+
+services:
+  db:
+    image: "mariadb:10.11"
+    container_name: "ict05-mariadb"
+    environment:
+      MARIADB_DATABASE: "ict05final"
+      MARIADB_USER: "ict05final"
+      MARIADB_PASSWORD: "ictpass123"
+      MARIADB_ROOT_PASSWORD: "rootpass123"
+    volumes:
+      - db_data:/var/lib/mysql
+    restart: unless-stopped
+    networks:
+      - toastlab-net
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
+  admin-app:
+    build: ./ict05_final_admin
+    container_name: "ict05-admin-app"
+    environment:
+      SPRING_PROFILES_ACTIVE: "prod,receive"
+      SPRING_DATASOURCE_URL: jdbc:mariadb://db:3306/ict05final
+      SPRING_DATASOURCE_USERNAME: ict05final
+      SPRING_DATASOURCE_PASSWORD: ictpass123
+    expose:
+      - "8081"
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - toastlab-net
+
+  user-app:
+    build: ./ict05_final_user
+    container_name: ict05-user-app
+    environment:
+      SPRING_PROFILES_ACTIVE: "prod,receive"
+      SPRING_DATASOURCE_URL: jdbc:mariadb://db:3306/ict05final
+      SPRING_DATASOURCE_USERNAME: ict05final
+      SPRING_DATASOURCE_PASSWORD: ictpass123
+    expose:
+      - "8082"
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - toastlab-net
+
+  nginx:
+    image: nginx:1.27
+    container_name: ict05-nginx
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./ict05_final_user/front-end/build:/usr/share/nginx/html/user:ro
+      - ./certbot/conf:/etc/letsencrypt:ro
+      - ./certbot/www:/var/www/certbot:ro
+    depends_on:
+      - admin-app
+      - user-app
+    networks:
+      - toastlab-net
+
+  certbot:
+    image: certbot/certbot
+    container_name: ict05-certbot
+    volumes:
+      - ./certbot/conf:/etc/letsencrypt
+      - ./certbot/www:/var/www/certbot
+    entrypoint: "/bin/sh -c 'trap exit TERM; while :; do certbot renew; sleep 12h & wait $${!}; done;'"
+    networks:
+      - toastlab-net
+
+  pdf-app:
+    build: ./ict05_final_admin/python-pdf-download
+    container_name: ict05-pdf-app
+    expose:
+      - "8000"
+    networks:
+      - toastlab-net
+
+  user-pdf-app:
+    build: ./ict05_final_user/python-pdf-download
+    container_name: ict05-user-pdf-app
+    expose:
+      - "8001"
+    networks:
+      - toastlab-net
+
+volumes:
+  db_data:
+  uploads_profile:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: /home/ubuntu/src/final/ict05_uploads/profile
+
+networks:
+  toastlab-net:
+    name: toastlab-net

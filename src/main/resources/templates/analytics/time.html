@@ -1,0 +1,462 @@
+<!doctype html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="format-detection" content="telephone=no">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="robots" content="noindex">
+  <th:block th:replace="~{fragments/head :: commonHead}"></th:block>
+
+  <link href="/admin/css/toast.css" rel="stylesheet"/>
+  <script src="/admin/js/lib/jquery-3.2.1.min.js"></script>
+  <script src="/admin/js/toast.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+  <style>
+    .wrap{padding:20px}
+    .grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+    .card{background:#fff;border-radius:16px;box-shadow:0 8px 24px rgba(0,0,0,.06);padding:16px}
+    .chart-card{background:#fff;border-radius:12px;box-shadow:0 6px 20px rgba(0,0,0,.06);padding:12px; height:260px;}
+    .chart-card canvas{width:100% !important; height:100% !important;}
+
+    /* orders.html과 동일한 필터 드롭다운 스타일 */
+    #storeFilter {position: relative;}
+    #storeFilter .filter-menu {position: absolute;top: 38px;left: 0;width: 280px;background: #fff;
+      border: 1px solid #ddd;border-radius: 8px;box-shadow: 0 8px 24px rgba(0,0,0,0.08);
+      display: none;z-index: 1000;}
+    #storeFilter.open .filter-menu {display: block;}
+    #storeFilter .filter-body {max-height: 260px;overflow-y: auto;padding: 8px 10px;}
+    #storeFilter .filter-list label {display: flex;align-items: center;gap: 6px;padding: 4px 0;cursor: pointer;}
+    #storeFilter .filter-all {display: flex;align-items: center;gap: 6px;border-bottom: 1px solid #f1f3f5;
+      margin-bottom: 6px;padding-bottom: 8px;}
+    #storeFilterBtn {display: flex;align-items: center;justify-content: space-between;gap: 6px;min-width: 100px;}
+    #storeFilter .caret {font-size: 11px;color: #555;}
+    #storeFilter .filter-list label{display:flex;align-items:center;gap:8px;padding:4px 6px;border-radius:6px;cursor:pointer;transition:background .15s ease;position:relative;}
+    #storeFilter .filter-list label:hover{background:#f8f9fa;}
+    #storeFilter .filter-list input[type="checkbox"]:checked + span{font-weight:600;color:#0d6efd;}
+    #storeFilter .filter-list input[type="checkbox"]:checked + span::before{content:"✔";color:#0d6efd;font-size:12px;margin-right:6px;}
+    #storeFilter .filter-all input[type="checkbox"]:checked + span{font-weight:600;color:#0d6efd;}
+  </style>
+</head>
+<body>
+<div id="wrap" class="frame">
+  <div th:replace="~{fragments/header :: header}"></div>
+
+  <div id="container" class="container">
+    <div class="title-bar">
+      <h2 class="page-title ellipsis">시간·요일 분석</h2>
+    </div>
+
+    <main id="content">
+      <div class="pack-down gap-20">
+
+        <!-- YTD 누적 차트 2개 -->
+        <section class="pack-down">
+          <div class="grid2">
+            <div class="chart-card">
+              <div class="fs-ss" style="margin-bottom:6px;">YTD 시간대별 매출</div>
+              <canvas id="chartYtdHour"></canvas>
+            </div>
+            <div class="chart-card">
+              <div class="fs-ss" style="margin-bottom:6px;">YTD 요일별 매출</div>
+              <canvas id="chartYtdDow"></canvas>
+            </div>
+          </div>
+        </section>
+
+        <!-- 필터 영역 (SSR GET 제출) -->
+        <div class="box-wrap">
+          <div id="search" class="search">
+            <form id="frm" method="get" th:action="@{/analytics/time}">
+              <fieldset class="pack-down gap-8">
+                <legend class="blind">검색</legend>
+
+                <!-- 검색 제출 시 1페이지로 -->
+                <input type="hidden" name="page" value="1"/>
+
+                <!-- 기간 -->
+                <div class="pack-right">
+                  <label class="pack-left">
+                    <span class="fs-ss">조회시작일</span>
+                    <input type="date" class="input-text medium form-control" name="startDate"
+                           th:value="${#temporals.format(analyticsSearchDto.startDate, 'yyyy-MM-dd')}"/>
+                  </label>
+                  <label class="pack-left">
+                    <span class="fs-ss">조회종료일</span>
+                    <input type="date" class="input-text medium form-control" name="endDate"
+                           th:value="${#temporals.format(analyticsSearchDto.endDate, 'yyyy-MM-dd')}"/>
+                  </label>
+                </div>
+
+                <div class="pack-both-down">
+                  <!-- 가맹점 선택 -->
+                  <div class="pack-left">
+                    <span class="fs-ss">가맹점 선택</span>
+                    <div class="pack-left" id="storeFilter" style="position:relative;">
+                      <button type="button" class="btn medium bdr-color1" id="storeFilterBtn">
+                        <span id="storeFilterLabel">전체</span><span class="caret">▼</span>
+                      </button>
+                      <div class="box-wrap filter-menu" id="storeFilterMenu">
+                        <div class="pack-both" style="padding:8px 10px;border-bottom:1px solid #f1f3f5;">
+                          <input type="search" class="input-text small" id="storeSearch" placeholder="매장 검색"/>
+                        </div>
+                        <div class="filter-body">
+                          <label class="filter-all">
+                            <input type="checkbox" id="storeAll"
+                                   th:checked="${#lists.isEmpty(analyticsSearchDto.storeIds)}">
+                            <span>전체</span>
+                          </label>
+                          <div class="filter-list">
+                            <label th:each="st : ${stores}">
+                              <input type="checkbox" name="storeIds" th:value="${st.id}"
+                                     th:checked="${analyticsSearchDto.storeIds != null} ? ${#lists.contains(analyticsSearchDto.storeIds, st.id)} : false">
+                              <span th:text="${st.name}">Store A</span>
+                            </label>
+                          </div>
+                        </div>
+                        <div class="pack-both" style="padding:8px 10px;border-top:1px solid #f1f3f5;">
+                          <button type="button" class="btn small color1" onclick="applyStoreFilter()">적용</button>
+                          <button type="button" class="btn small bdr-color1" onclick="resetStoreFilter()">초기화</button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div class="pack-right">
+                    <div class="pack-right">
+                      <!-- 일/월 + 페이지 사이즈 -->
+                      <div class="pack-left">
+                        <div class="btn medium bdr-color1 btn-group btn-group-toggle" data-bs-toggle="buttons">
+                          <label class="btn medium" th:classappend="${analyticsSearchDto.viewBy?.name() == 'DAY'} ? ' active' : ''">
+                            <input type="radio" name="viewBy" value="DAY" th:checked="${analyticsSearchDto.viewBy?.name() == 'DAY'}">일별
+                          </label>
+                          <label class="btn medium" th:classappend="${analyticsSearchDto.viewBy?.name() == 'MONTH'} ? ' active' : ''">
+                            <input type="radio" name="viewBy" value="MONTH" th:checked="${analyticsSearchDto.viewBy?.name() == 'MONTH'}">월별
+                          </label>
+                        </div>
+
+                        <div class="pack-left page-size">
+                          <!-- Pageable 표준 파라미터명: size -->
+                          <select title="출력개수" name="size" class="select medium" id="pageSizeSelect">
+                            <option th:value="20"  th:selected="${timerows != null and timerows.size == 20}">20</option>
+                            <option th:value="40"  th:selected="${timerows != null and timerows.size == 40}">40</option>
+                            <option th:value="60"  th:selected="${timerows != null and timerows.size == 60}">60</option>
+                            <option th:value="80"  th:selected="${timerows != null and timerows.size == 80}">80</option>
+                            <option th:value="100" th:selected="${timerows != null and timerows.size == 100}">100</option>
+                            <option th:value="200" th:selected="${timerows != null and timerows.size == 200}">200</option>
+                          </select>
+                          <span class="fs-ss">개씩 보기</span>
+                        </div>
+                      </div>
+                      <!-- Total 토글 -->
+                      <span class="fs-ss">요약(합계)</span>
+                      <div class="btn medium bdr-color1 btn-group btn-group-toggle" data-bs-toggle="buttons" role="group" style="margin-left:8px;">
+                        <label class="btn medium" th:classappend="${analyticsSearchDto.showTotal} ? ' active' : ''">
+                          <input type="radio" name="showTotal" value="true" th:checked="${analyticsSearchDto.showTotal}"> 보이기
+                        </label>
+                        <label class="btn medium" th:classappend="${!analyticsSearchDto.showTotal} ? ' active' : ''">
+                          <input type="radio" name="showTotal" value="false" th:checked="${!analyticsSearchDto.showTotal}"> 숨기기
+                        </label>
+                      </div>
+
+                      <!-- 조회 버튼: 폼 submit -->
+                      <input type="submit" class="btn medium color1" value="조회"/>
+                    </div>
+                  </div>
+                </div>
+              </fieldset>
+            </form>
+          </div>
+        </div>
+
+        <!-- 필터 적용 차트 2개 -->
+        <section class="pack-down">
+          <div class="fs-ss" style="margin-bottom:8px;">선택한 기간·가맹점 기준</div>
+          <div class="grid2">
+            <div class="chart-card">
+              <div class="fs-ss" style="margin-bottom:6px;">시간대별 매출(필터적용)</div>
+              <canvas id="chartFilHour"></canvas>
+            </div>
+            <div class="chart-card">
+              <div class="fs-ss" style="margin-bottom:6px;">요일별 매출(필터적용)</div>
+              <canvas id="chartFilDow"></canvas>
+            </div>
+          </div>
+        </section>
+
+        <div class="list-header pack-both">
+          <div class="pack-left">
+            <button type="button" class="btn medium bdr-color1" onclick="excelDownload()">엑셀다운로드</button>
+            <button type="button" class="btn medium bdr-color1" onclick="pdfDownload()">PDF다운로드</button>
+          </div>
+        </div>
+        <!-- 목록 테이블: DAY -->
+        <section class="pack-down" th:if="${analyticsSearchDto.viewBy?.name() == 'DAY'}">
+          <table class="data-table">
+            <thead>
+            <tr>
+              <th>Store</th>
+              <th>시간대</th>
+              <th>요일</th>
+              <th>주문ID</th>
+              <th class="ta-r">주문금액</th>
+              <th>카테고리</th>
+              <th>메뉴</th>
+              <th>OrderType</th>
+              <th>OrderDate</th>
+            </tr>
+            </thead>
+            <tbody>
+            <tr th:if="${timerows == null or #lists.isEmpty(timerows.content)}">
+              <td colspan="9" class="ta-c">조회 결과가 없습니다.</td>
+            </tr>
+            <tr th:each="r : ${timerows.content}">
+              <td th:text="${r.storeName}"></td>
+              <td th:text="${r.hourSlot}"></td>
+              <td th:text="${r.dayOfWeek}"></td>
+              <td class="ta-r" th:text="${r.orderId}"></td>
+              <td class="ta-r" th:text="${#numbers.formatDecimal(r.orderAmount == null ? 0 : r.orderAmount, 0, 'COMMA', 0, 'POINT')}"></td>
+              <td th:text="${r.category}"></td>
+              <td th:text="${r.menu}"></td>
+              <td th:text="${r.orderType}"></td>
+              <td th:text="${r.orderDate}"></td>
+            </tr>
+            </tbody>
+          </table>
+
+          <div style="text-align:center;">
+            <div th:replace="~{fragments/pagination :: pagination (${timerows})}"></div>
+          </div>
+        </section>
+
+        <!-- 목록 테이블: MONTH -->
+        <section class="pack-down" th:if="${analyticsSearchDto.viewBy?.name() == 'MONTH'}">
+          <table class="data-table">
+            <thead>
+            <tr>
+              <th>Date</th>
+              <th>Store</th>
+              <th>시간대</th>
+              <th>요일</th>
+              <th class="ta-r">주문금액</th>
+              <th>OrderType</th>
+            </tr>
+            </thead>
+            <tbody>
+            <tr th:if="${timerows == null or #lists.isEmpty(timerows.content)}">
+              <td colspan="6" class="ta-c">조회 결과가 없습니다.</td>
+            </tr>
+            <tr th:each="r : ${timerows.content}">
+              <td th:text="${r.date}"></td>
+              <td th:text="${r.storeName}"></td>
+              <td th:text="${r.hourSlot}"></td>
+              <td th:text="${r.dayOfWeek}"></td>
+              <td class="ta-r" th:text="${#numbers.formatDecimal(r.orderAmount == null ? 0 : r.orderAmount, 0, 'COMMA', 0, 'POINT')}"></td>
+              <td th:text="${r.orderType}"></td>
+            </tr>
+            </tbody>
+          </table>
+
+          <div style="text-align:center;">
+            <div th:replace="~{fragments/pagination :: pagination (${timerows})}"></div>
+          </div>
+        </section>
+
+      </div>
+    </main>
+
+    <div th:replace="~{fragments/footer :: footer}"></div>
+  </div>
+</div>
+
+<script>
+  function excelDownload() {
+    const frm = document.getElementById('frm');
+    const params = new URLSearchParams(new FormData(frm));
+    // 서버 context-path가 /admin 이므로 동일하게 prefix
+    const url = `/admin/API/analytics/time/download?` + params.toString();
+    window.location.href = url;
+  }
+  function pdfDownload() {
+    const frm = document.getElementById('frm');
+    const params = new URLSearchParams(new FormData(frm));
+    const url = `/admin/API/analytics/time/pdf/download?` + params.toString();
+    window.location.href = url;
+  }
+</script>
+
+<script>
+  function ds(series){ return (series||[]).map(s => ({label: s.name, data: s.data})); }
+
+  function makeLine(canvasEl, labels, series) {
+    const datasets = ds(series);
+    const showLegend = datasets.length > 1;      // ✅ 시리즈가 2개 이상이면 범례 표시
+    if (canvasEl._chart) canvasEl._chart.destroy();
+    canvasEl._chart = new Chart(canvasEl.getContext('2d'), {
+      type: 'line',
+      data: { labels: labels||[], datasets },
+      options: { responsive:true, maintainAspectRatio:false, animation:false,
+        plugins:{ legend:{ display: showLegend } }, interaction:{ mode:'index', intersect:false } }
+    });
+    return canvasEl._chart;
+  }
+  function makeBar(canvasEl, labels, series) {
+    const datasets = ds(series);
+    const showLegend = datasets.length > 1;      // ✅ 동일
+    if (canvasEl._chart) canvasEl._chart.destroy();
+    canvasEl._chart = new Chart(canvasEl.getContext('2d'), {
+      type: 'bar',
+      data: { labels: labels||[], datasets },
+      options: { responsive:true, maintainAspectRatio:false, animation:false,
+        plugins:{ legend:{ display: showLegend } }, interaction:{ mode:'index', intersect:false } }
+    });
+    return canvasEl._chart;
+  }
+</script>
+
+<!-- 라디오 active 토글 (orders.html 동일) -->
+<script>
+  (function () {
+    const groups = document.querySelectorAll('[data-bs-toggle="buttons"]');
+    groups.forEach(group => {
+      const labels = group.querySelectorAll('label');
+      const inputs = group.querySelectorAll('input[type="radio"]');
+      inputs.forEach(input => {
+        input.addEventListener('change', (e) => {
+          labels.forEach(lb => lb.classList.remove('active'));
+          e.target.closest('label').classList.add('active');
+        });
+      });
+    });
+  })();
+</script>
+
+<!-- 가맹점 필터 (orders.html 동일) -->
+<script>
+  const sfRoot = document.getElementById('storeFilter');
+  const sfBtn  = document.getElementById('storeFilterBtn');
+  const sfMenu = document.getElementById('storeFilterMenu');
+  const sfSearch = document.getElementById('storeSearch');
+  const sfAll = document.getElementById('storeAll');
+  const sfLabel = document.getElementById('storeFilterLabel');
+  const sfList = sfMenu ? sfMenu.querySelector('.filter-list') : null;
+
+  if (sfBtn) {
+    sfBtn.addEventListener('click', () => sfRoot.classList.toggle('open'));
+    document.addEventListener('click', (e) => { if (!sfRoot.contains(e.target)) sfRoot.classList.remove('open'); });
+
+    if (sfAll) {
+      sfAll.addEventListener('change', () => {
+        if (sfAll.checked && sfList) sfList.querySelectorAll('input[name="storeIds"]').forEach(c => c.checked = false);
+        updateStoreLabel();
+      });
+    }
+
+    if (sfList) {
+      sfList.addEventListener('change', (e) => {
+        if (e.target.name !== 'storeIds') return;
+        if (e.target.checked) sfAll.checked = false;
+        const any = [...sfList.querySelectorAll('input[name="storeIds"]')].some(c => c.checked);
+        if (!any) sfAll.checked = true;
+        updateStoreLabel();
+      });
+    }
+
+    if (sfSearch && sfList) {
+      sfSearch.addEventListener('input', (e) => {
+        const q = e.target.value.toLowerCase();
+        sfList.querySelectorAll('label').forEach(lb => {
+          const txt = lb.querySelector('span').textContent.toLowerCase();
+          lb.style.display = txt.includes(q) ? '' : 'none';
+        });
+      });
+    }
+  }
+
+  function updateStoreLabel() {
+    if (!sfList || !sfAll) return;
+    if (sfAll.checked) { sfLabel.textContent = '전체'; return; }
+    const selected = [...sfList.querySelectorAll('input[name="storeIds"]:checked')];
+    if (selected.length === 1) {
+      sfLabel.textContent = selected[0].closest('label').querySelector('span').textContent;
+    } else {
+      sfLabel.textContent = `선택 ${selected.length}개`;
+    }
+  }
+  function applyStoreFilter(){ updateStoreLabel(); sfRoot.classList.remove('open'); }
+  function resetStoreFilter(){
+    if (!sfList || !sfAll) return;
+    sfAll.checked = true;
+    sfList.querySelectorAll('input[name="storeIds"]').forEach(c => c.checked = false);
+    const ss = document.getElementById('storeSearch');
+    if (ss) ss.value = '';
+    sfList.querySelectorAll('label').forEach(lb => lb.style.display = '');
+    updateStoreLabel();
+  }
+
+  document.getElementById('frm').addEventListener('submit', function () {
+    const all = document.getElementById('storeAll');
+    const list = document.querySelector('#storeFilter .filter-list');
+    if (all && all.checked && list) {
+      list.querySelectorAll('input[name="storeIds"]').forEach(c => c.disabled = true);
+    }
+  });
+
+  document.addEventListener('DOMContentLoaded', () => {
+    const list = document.querySelector('#storeFilter .filter-list');
+    const any = list && [...list.querySelectorAll('input[name="storeIds"]')].some(c => c.checked);
+    const all = document.getElementById('storeAll');
+    if (all) all.checked = !any;
+    updateStoreLabel();
+
+    // 페이지 사이즈 변경 시 자동 submit 금지, page=1만 리셋
+    const sizeSel = document.getElementById('pageSizeSelect');
+    if (sizeSel) {
+      sizeSel.addEventListener('change', () => {
+        const pageHidden = document.querySelector('#frm input[name="page"]');
+        if (pageHidden) pageHidden.value = 1;
+      });
+    }
+  });
+</script>
+
+<!-- 차트 렌더 (서버 DTO 직바인딩) -->
+<script th:inline="javascript">
+  // 서버에서 주입된 DTO들
+  const timeCard  = /*[[${timeCard}]]*/ null;   // YTD
+  const timeChart = /*[[${timeChart}]]*/ null;  // 필터 반영
+
+  function ds(series){ return (series||[]).map(s => ({label: s.name, data: s.data})); }
+  function makeLine(canvasEl, labels, series) {
+    if (canvasEl._chart) canvasEl._chart.destroy();
+    canvasEl._chart = new Chart(canvasEl.getContext('2d'), {
+      type: 'line',
+      data: { labels: labels||[], datasets: ds(series) },
+      options: { responsive: true, maintainAspectRatio: false, animation:false,
+        plugins: { legend: { display: false } }, interaction: { mode:'index', intersect:false } }
+    });
+    return canvasEl._chart;
+  }
+  function makeBar(canvasEl, labels, series) {
+    if (canvasEl._chart) canvasEl._chart.destroy();
+    canvasEl._chart = new Chart(canvasEl.getContext('2d'), {
+      type: 'bar',
+      data: { labels: labels||[], datasets: ds(series) },
+      options: { responsive: true, maintainAspectRatio: false, animation:false,
+        plugins: { legend: { display: false } }, interaction: { mode:'index', intersect:false } }
+    });
+    return canvasEl._chart;
+  }
+
+  document.addEventListener('DOMContentLoaded', function(){
+    // YTD
+    makeLine(document.getElementById('chartYtdHour'), (timeCard && timeCard.hours)||[],  (timeCard && timeCard.timeOfDay)||[]);
+    makeBar (document.getElementById('chartYtdDow' ), (timeCard && timeCard.dows) ||[],  (timeCard && timeCard.dayOfWeek)||[]);
+    // 필터 적용
+    makeLine(document.getElementById('chartFilHour'), (timeChart && timeChart.hours)||[], (timeChart && timeChart.timeOfDay)||[]);
+    makeBar (document.getElementById('chartFilDow' ), (timeChart && timeChart.dows) ||[], (timeChart && timeChart.dayOfWeek)||[]);
+  });
+</script>
+</body>
+</html>

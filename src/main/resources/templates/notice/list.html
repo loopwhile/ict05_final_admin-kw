@@ -1,0 +1,170 @@
+<!doctype html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="format-detection" content="telephone=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="robots" content="noindex">
+    <meta name="googlebot" content="noindex">
+    <title>공지사항</title>
+
+    <!-- 공통 헤드 & 자원 -->
+    <th:block th:replace="~{fragments/head :: commonHead}"></th:block>
+    <link href="/admin/css/toast.css" rel="stylesheet"/>
+    <script src="/admin/js/lib/jquery-3.2.1.min.js"></script>
+    <script src="/admin/js/toast.js"></script>
+</head>
+<body>
+<div id="wrap" class="frame">
+    <div th:replace="~{fragments/header :: header}"></div>
+
+    <div id="container" class="container">
+        <!-- 타이틀바 -->
+        <div class="title-bar">
+            <div class="pack-both">
+                <h2 class="page-title ellipsis">공지사항</h2>
+                <a href="/admin/notice/write" class="btn medium color1">글쓰기</a>
+            </div>
+        </div>
+
+        <main id="content">
+            <div class="box-wrap">
+                <!-- 검색 영역 -->
+                <div id="search" class="search">
+                    <form name="frm" id="frm" method="get">
+                        <fieldset>
+                            <legend class="blind">검색</legend>
+                            <div class="pack-both">
+                                <div class="pack-left">
+                                    <select name="type" class="select medium" title="검색유형">
+                                        <option value=""
+                                                th:selected="${noticeSearchDTO.type == null or noticeSearchDTO.type == ''}">
+                                            선택
+                                        </option>
+                                        <option value="title"   th:selected="${noticeSearchDTO.type == 'title'}">제목</option>
+                                        <option value="content" th:selected="${noticeSearchDTO.type == 'content'}">내용</option>
+                                        <option value="all"     th:selected="${noticeSearchDTO.type == 'all'}">제목 + 내용</option>
+                                    </select>
+
+                                    <input type="search" name="s" title="검색어"
+                                           th:value="${noticeSearchDTO.s}"
+                                           class="input-text medium form-control"
+                                           placeholder="제목/내용 검색" />
+
+                                    <input type="submit" value="검색" class="btn medium color1"/>
+                                </div>
+
+                                <div class="pack-left page-size">
+                                    <select title="뷰사이즈"
+                                            th:field="${noticeSearchDTO.size}"
+                                            class="select medium"
+                                            onchange="setPageSize(this.value)">
+                                        <option value="10">10</option>
+                                        <option value="30">30</option>
+                                        <option value="50">50</option>
+                                        <option value="100">100</option>
+                                    </select>
+                                    <span class="fs-ss">개씩 보기</span>
+                                </div>
+                            </div>
+                        </fieldset>
+                    </form>
+                </div>
+
+                <!-- 목록 액션 -->
+                <section class="pack-down">
+                    <div class="list-header pack-both">
+                        <div class="pack-left"></div>
+                        <div class="pack-right">
+                            <button type="button" class="btn medium bdr-color2" onclick="excelDownload()">엑셀다운로드</button>
+                        </div>
+                    </div>
+
+                    <!-- 테이블 -->
+                    <table class="data-table">
+                        <thead>
+                        <tr>
+                            <th scope="col"><input type="checkbox" id="selectAll"/></th>
+                            <th scope="col">순번</th>
+                            <th scope="col">ID</th>
+                            <th scope="col">제목</th>
+                            <th scope="col">작성자</th>
+                            <th scope="col">작성일</th>
+                        </tr>
+                        </thead>
+                        <tbody>
+                        <tr th:each="notice, stat : ${notices.content}">
+                            <td>
+                                <input type="checkbox" class="row-checkbox"
+                                       name="selectedIds"
+                                       th:id="'chk-'+${stat.index}"
+                                       th:value="${notice.id}"/>
+                            </td>
+                            <td th:text="${notices.totalElements - (notices.number * notices.size) - stat.index}">1</td>
+                            <td th:text="${notice.id}">ID</td>
+                            <td>
+                                <a th:href="@{'/notice/detail/' + ${notice.id}}"
+                                   th:text="${notice.title}">제목</a>
+                            </td>
+                            <td th:text="${notice.writer}">작성자</td>
+                            <td th:text="${#temporals.format(notice.registeredAt, 'yyyy-MM-dd HH:mm')}">00.00.00</td>
+                        </tr>
+                        </tbody>
+                    </table>
+
+                    <!-- 페이지네이션 -->
+                    <div style="text-align:center;">
+                        <div th:replace="~{fragments/pagination :: pagination (${notices})}"></div>
+                    </div>
+                </section>
+            </div>
+        </main>
+
+        <div th:replace="~{fragments/footer :: footer}"></div>
+    </div>
+</div>
+
+<!-- 스크립트: 체크박스, 페이지사이즈, 엑셀다운로드 -->
+<script>
+    function setPageSize(size) {
+        const params = new URLSearchParams(window.location.search);
+        params.set('size', size);
+        params.set('page', 1);
+        window.location = `/admin/notice/list?${params.toString()}`;
+    }
+
+    function excelDownload() {
+        const formData = new FormData(document.getElementById('frm'));
+        const type = formData.get("type") || "";
+        const s    = formData.get("s") || "";
+        window.location = `/admin/API/notice/download?type=${encodeURIComponent(type)}&s=${encodeURIComponent(s)}`;
+    }
+
+    const selectAll = document.getElementById('selectAll');
+    const getRowCheckboxes = () => Array.from(document.querySelectorAll('.row-checkbox'));
+
+    function updateSelectAllState() {
+        const all = getRowCheckboxes();
+        if (all.length === 0) { selectAll.checked = false; selectAll.indeterminate = false; return; }
+        const checkedCount = all.filter(cb => cb.checked).length;
+        if (checkedCount === 0) { selectAll.checked = false; selectAll.indeterminate = false; }
+        else if (checkedCount === all.length) { selectAll.checked = true; selectAll.indeterminate = false; }
+        else { selectAll.checked = false; selectAll.indeterminate = true; }
+    }
+
+    if (selectAll) {
+        selectAll.addEventListener('change', () => {
+            const all = getRowCheckboxes();
+            all.forEach(cb => cb.checked = selectAll.checked);
+            selectAll.indeterminate = false;
+        });
+    }
+    document.addEventListener('change', (e) => {
+        if (!e.target.classList.contains('row-checkbox')) return;
+        updateSelectAllState();
+    });
+    document.addEventListener('DOMContentLoaded', updateSelectAllState);
+</script>
+</body>
+</html>

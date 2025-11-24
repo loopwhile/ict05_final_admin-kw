@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Pagination</title>
+</head>
+<body>
+
+<!-- Pagination 변수 1개일 때 기본 페이지 변수: 'page' -->
+<th:block th:fragment="pagination (pageVars)" th:replace="~{:: pagination2 (${pageVars}, 'page')}"></th:block>
+
+<!-- Pagination 변수 2개일 때 기본 페이지 변수 커스터마이징 -->
+<th:block th:fragment="pagination2 (pageVars, pageParam)">
+    <div class="pagination" th:if="${pageVars.numberOfElements ne null and pageVars.numberOfElements gt 0}" th:with="
+        pageSize = 10,
+        urlBuilder = ${urlBuilder.fromCurrentRequest()},
+        currentPage = ${T(java.lang.Math).min(pageVars.pageable.pageNumber + 1, pageVars.totalPages)},
+        startPage = ${T(java.lang.Math).max(((currentPage.intValue() - 1) / pageSize.intValue()) * pageSize.intValue() + 1, 1)},
+        lastPage = ${T(java.lang.Math).min(startPage.intValue() + pageSize.intValue() - 1, pageVars.totalPages)}
+    ">
+        <!--/* 맨앞 back */-->
+        <a th:if="${currentPage gt 1}" th:href="${#uris.unescapeQueryParam(urlBuilder.replaceQueryParam(pageParam, 1).toUriString())}" class="first">«</a>
+        <!--/* 이전 prev */-->
+        <a th:if="${startPage gt pageSize}" th:href="${#uris.unescapeQueryParam(urlBuilder.replaceQueryParam(pageParam, startPage - 1).toUriString())}" class="prev">〈</a>
+        <!--/* 1 2 3 4 5 6 7 8 9 10 on */-->
+        <th:block th:each="page : ${#numbers.sequence(startPage, lastPage)}">
+            <a th:if="${currentPage eq page}" th:text="${page}" class="on">1</a>
+            <a th:if="${currentPage ne page}" th:href="${#uris.unescapeQueryParam(urlBuilder.replaceQueryParam(pageParam, page).toUriString())}" th:text="${page}">1</a>
+        </th:block>
+        <!--/* 다음 next */-->
+        <a th:if="${lastPage lt pageVars.totalPages}" th:href="${#uris.unescapeQueryParam(urlBuilder.replaceQueryParam(pageParam, lastPage + 1).toUriString())}" class="next">〉</a>
+        <!--/* 끝 front */-->
+        <a th:if="${currentPage lt pageVars.totalPages}" th:href="${#uris.unescapeQueryParam(urlBuilder.replaceQueryParam(pageParam, pageVars.totalPages).toUriString())}" class="last">»</a>
+    </div>
+</th:block>
+
+</body>
+</html>

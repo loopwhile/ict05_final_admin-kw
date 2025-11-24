@@ -1,0 +1,329 @@
+<!doctype html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="format-detection" content="telephone=no">
+    <meta name="viewport"
+          content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+    <meta name="robots" content="noindex">
+    <meta name="googlebot" content="noindex">
+    <!-- Bootstrap CSS CDN -->
+    <th:block th:replace="~{fragments/head :: commonHead}"></th:block>
+
+    <link href="/admin/css/toast.css" rel="stylesheet"/>
+    <script src="/admin/js/lib/jquery-3.2.1.min.js"></script>
+    <script src="/admin/js/toast.js"></script>
+</head>
+<body>
+<div id="wrap" class="frame">
+    <div th:replace="~{fragments/header :: header}"></div>
+
+    <div id="container" class="container">
+        <div class="title-bar">
+            <h2 class="page-title ellipsis max-1132">
+                <span class="fw-400">출고 등록</span>
+            </h2>
+        </div>
+
+        <main id="content" class="max-1132">
+            <div class="box-wrap">
+                <div class="row-2">
+                    <section class="col">
+                        <h3 class="section-title">출고 등록 폼</h3>
+                        <form id="outForm" class="pack-down gap-20" style="margin-top: 1rem;">
+                            <div class="pack-down gap-12">
+
+                                <!-- 카테고리 선택 -->
+                                <div class="field pack-down col">
+                                    <label class="label medium required" for="categorySelect">재료 카테고리</label>
+                                    <div class="insert pack-down">
+                                        <select id="categorySelect" class="select medium" required onchange="onCategoryChange(this.value)">
+                                            <option value="">카테고리 선택</option>
+                                            <option th:each="c : ${categories}"
+                                                    th:value="${c.name()}"
+                                                    th:text="${c.description != null ? c.description : c.name()}">
+                                            </option>
+                                        </select>
+                                        <p id="categoryError" class="warning"></p>
+                                    </div>
+                                </div>
+
+                                <!-- 재료 선택 -->
+                                <div class="field pack-down">
+                                    <label class="label medium required" for="materialSelect">재료 선택</label>
+                                    <div class="insert pack-down">
+                                        <select id="materialSelect" name="materialId" class="select medium" required onchange="onMaterialChange(this)">
+                                            <option value="">재료 선택</option>
+                                        </select>
+                                        <p id="materialError" class="warning"></p>
+                                    </div>
+                                </div>
+
+                                <label class="pack-down gap-4">
+                                    <span>재료 ID</span>
+                                    <input type="number" class="input-text large" id="materialId" min="1">
+                                </label>
+
+                                <label class="pack-down gap-4">
+                                    <span>총 출고 수량</span>
+                                    <input type="number" class="input-text large" id="qty" step="0.001" min="0">
+                                </label>
+
+                                <label class="pack-down gap-4">
+                                    <span>가맹점 ID(선택)</span>
+                                    <input type="number" class="input-text large" id="storeId" placeholder="예: 3" min="1">
+                                </label>
+
+                                <label class="pack-down gap-4">
+                                    <span>비고</span>
+                                    <input type="text" class="input-text large" id="memo" placeholder="예: 테스트">
+                                </label>
+                            </div>
+                        </form>
+                    </section>
+
+                    <section class="col">
+                        <h3 class="section-title">배치 분할 미리보기</h3>
+                        <table class="data-table" id="previewTable">
+                            <thead>
+                            <tr>
+                                <th scope="col">로트 번호</th>
+                                <th scope="col">배치 ID</th>
+                                <th scope="col">출고 수량</th>
+                            </tr>
+                            </thead>
+                            <tbody id="previewTbody">
+                            <tr id="previewEmpty"><td colspan="3">미리보기 결과가 없습니다.</td></tr>
+                            </tbody>
+                            <tfoot>
+                            <tr>
+                                <th>합계</th>
+                                <th colspan="2" class="ta-r" id="sumQty">0</th>
+                            </tr>
+                            </tfoot>
+                        </table>
+                    </section>
+                </div>
+
+                <div class="button-area pack-both">
+                    <button type="button" id="btnPreview" class="btn large color1">미리보기(FIFO)</button>
+                    <button type="button" id="btnConfirm" class="btn large color2" disabled>출고 확정</button>
+                </div>
+            </div>
+
+            <div class="button-area pack-both">
+                <a href="/admin/inventory/list" class="btn medium color1">목록</a>
+            </div>
+        </main>
+
+        <div th:replace="~{fragments/footer :: footer}"></div>
+    </div>
+</div>
+<script>
+
+    // 카테고리 변경 시 재료 목록 로드
+    function onCategoryChange(category) {
+        const materialSelect = document.getElementById("materialSelect");
+        materialSelect.innerHTML = '<option value="">재료 선택</option>'; // 초기화
+
+        if (!category) return;
+
+        fetch(`/admin/API/material/list?category=${category}`)
+            .then(res => res.json())
+            .then(data => {
+                data.forEach(m => {
+                    const opt = document.createElement("option");
+                    opt.value = m.id;  // 재료의 ID를 value로 설정
+                    opt.textContent = `${m.name} (${m.code})`;  // 재료 이름과 코드 표시
+                    materialSelect.appendChild(opt);
+                });
+            })
+            .catch(err => console.error("재료 목록 로드 실패:", err));
+    }
+
+    // 재료 선택 시 재료 ID를 입력 필드에 자동으로 넣기
+    function onMaterialChange(select) {
+        const materialId = select.value;
+        console.log("선택된 재료 ID:", materialId);  // 디버깅을 위한 로그 추가
+        document.getElementById("materialId").value = materialId;  // 재료 ID 입력 필드에 값 설정
+    }
+
+
+
+
+    (function () {
+      const $btnPreview = $('#btnPreview');
+      const $btnConfirm = $('#btnConfirm');
+      const $tbody = $('#previewTbody');
+      const $empty = $('#previewEmpty');
+      const $sumQty = $('#sumQty');
+
+      // toast 없으면 alert로 대체
+      const toastApi = (window.toast) ? window.toast : {
+        success: msg => alert(msg),
+        error: msg => alert(msg),
+        warn: msg => alert(msg)
+      };
+
+      let lastPreview = []; // OutPreviewItemDTO[]
+
+      function fmtDate(d) {
+        if (!d) return '';
+        return String(d).substring(0, 10); // 2025-11-05T... or 2025-11-05 둘 다 커버
+      }
+
+      function fmtNum(n) {
+        if (n == null || isNaN(n)) return '';
+        return Number(n).toLocaleString(undefined, { maximumFractionDigits: 3 });
+      }
+
+      function readInputs() {
+        const materialId = Number($('#materialId').val());
+        const qty = Number($('#qty').val());
+        const storeIdRaw = $('#storeId').val();
+        const storeId = storeIdRaw ? Number(storeIdRaw) : null;
+        const memo = $('#memo').val() || null;
+        return { materialId, qty, storeId, memo };
+      }
+
+
+        function renderPreview(rows) {
+            // 미리보기 테이블 업데이트
+            $tbody.empty();
+
+            if (!rows || rows.length === 0) {
+                $tbody.append($empty.show());
+                $sumQty.text('0');
+                $btnConfirm.prop('disabled', true);
+                return;
+            }
+
+            let total = 0;
+            rows.forEach(r => {
+                const q = (r.qty != null) ? r.qty : r.quantity;
+                const lotNo = r.lotNo || '';
+                const batchId = r.batchId || '';
+                const exp = fmtDate(r.expirationDate);
+
+                total += Number(q) || 0;
+
+                const $tr = $('<tr/>');
+                const lotHtml = exp ? `${lotNo}<br><span class="fc-999 fs-12">${exp}</span>` : lotNo;
+
+                $tr.append(
+                    $('<td/>').html(lotHtml)
+                );
+                $tr.append(
+                    $('<td/>').text(batchId)
+                );
+                $tr.append(
+                    $('<td/>').addClass('ta-r').text(fmtNum(q))
+                );
+
+                $tbody.append($tr);
+            });
+
+            $sumQty.text(fmtNum(total));
+            $btnConfirm.prop('disabled', false);
+
+            // 여기서 lastPreview를 업데이트해야 합니다.
+            lastPreview = rows; // 미리보기 데이터를 lastPreview에 할당
+        }
+
+
+
+
+      // ===== 미리보기 =====
+        $btnPreview.on('click', function () {
+            const { materialId, qty } = readInputs();
+            if (!materialId || !qty || qty <= 0) {
+                toastApi.warn('재료 ID와 수량을 확인하세요.');
+                return;
+            }
+
+            const body = new URLSearchParams();
+            body.set('materialId', String(materialId));
+            body.set('qty', String(qty));
+
+            fetch(`/admin/API/inventory/out/preview?materialId=${materialId}&qty=${qty}`, {
+                method: 'GET',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8' },
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.error) {
+                    alert(data.error);
+                } else {
+                    renderPreview(data); // 미리보기 렌더링 함수
+                }
+            })
+            .catch(error => {
+                console.error('출고 미리보기 실패:', error);
+                alert('미리보기 요청 중 오류가 발생했습니다.');
+            });
+        });
+
+
+        // ===== 확정 =====
+        $btnConfirm.on('click', function () {
+            const { materialId, qty, storeId, memo } = readInputs();
+            if (!materialId || !qty || qty <= 0) {
+                toastApi.warn('재료 ID와 수량을 확인하세요.');
+                return;
+            }
+
+            // lastPreview가 비어있는지 확인
+            if (!lastPreview || lastPreview.length === 0) {
+                toastApi.warn('먼저 미리보기를 수행하세요.');
+                return;
+            }
+
+            const payload = {
+                materialId: materialId,
+                storeId: storeId, // null 가능
+                totalQty: qty, // BigDecimal
+                outDate: null, // 서버에서 now() 처리
+                memo: memo
+            };
+
+            fetch('/admin/API/inventory/out/confirm', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json;charset=UTF-8' },
+                body: JSON.stringify(payload)
+            })
+            .then(async (res) => {
+                const raw = await res.text();
+                console.log('[OUT CONFIRM] status=', res.status, 'raw=', raw);
+
+                if (!res.ok) {
+                    throw new Error(raw || `HTTP ${res.status}`);
+                }
+
+                if (!raw) return null;
+
+                try {
+                    const json = JSON.parse(raw);
+                    return json;
+                } catch (e) {
+                    console.warn('[OUT CONFIRM] JSON parse error, use raw:', e);
+                    return raw;
+                }
+            })
+            .then(id => {
+                toastApi.success('출고 확정 완료. ID=' + id);
+                lastPreview = []; // 출고 확정 후 lastPreview 초기화
+                renderPreview([]); // 테이블 비우기
+            })
+            .catch(err => {
+                console.error('[OUT CONFIRM] error:', err);
+                toastApi.error('출고 확정 실패: ' + err.message);
+            });
+        });
+
+
+    })();
+</script>
+
+</body>
+</html>

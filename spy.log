@@ -1,0 +1,1 @@
+1759118975874|4|statement|connection 0|url jdbc:p6spy:mariadb://ict05final.wwwbiz.kr:3306/ict05final|SELECT @@character_set_database, @@sql_mode|SELECT @@character_set_database, @@sql_mode

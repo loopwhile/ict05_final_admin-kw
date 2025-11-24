@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="format-detection" content="telephone=no">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="viewport"
+          content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <meta name="robots" content="noindex">
+    <meta name="googlebot" content="noindex">
+    <title>토스트랩 관리자</title>
+
+    <th:block th:replace="~{fragments/head :: commonHead}"></th:block>
+
+    <!-- favicon -->
+    <link rel="icon" th:href="@{/images/logo/favi_ad.png}" type="image/x-icon"/>
+
+    <!-- CSS -->
+    <link rel="stylesheet" th:href="@{/css/toast.css}" />
+
+    <!-- JS -->
+    <script th:src="@{/js/lib/jquery-3.2.1.min.js}"></script>
+    <script th:src="@{/js/toast.js}"></script>
+</head>
+<body class="scroll-up">
+<div id="wrap" class="frame">
+    <div th:replace="~{fragments/header :: header}"></div>
+
+    <div id="container" class="container">
+        <div class="title-bar">
+            <h2 class="page-title ellipsis">사원 상세</h2>
+        </div>
+
+        <main id="content" class="max-900">
+            <div class="box-wrap">
+                <div class="pack-down gap-20">
+                    <h3 class="fs-2xl fw-600 fc-333" th:text="${staff.staffName}">사원명</h3>
+
+                    <div class="row col-3">
+                        <div class="pack-down col">
+                            <span class="fs-ss fc-999">ID</span>
+                            <span th:text="${staff.id}">ID</span>
+                        </div>
+
+                        <div class="pack-down col">
+                            <span class="fs-ss fc-999">소속 가맹점 ID</span>
+                            <span th:text="${staff.store != null ? staff.store.id : '미지정'}">소속 가맹점 ID</span>
+                        </div>
+
+                        <div class="pack-down col">
+                            <span class="fs-ss fc-999">소속 가맹점 명</span>
+                            <span th:text="${staff.store != null ? staff.store.name : '미지정'}">소속 가맹점 명</span>
+                        </div>
+                    </div>
+
+                    <div class="row col-3">
+                        <div class="pack-down col">
+                            <span class="fs-ss fc-999">근무형태</span>
+                            <span th:text="${staff.staffEmploymentType.description}">근무형태</span>
+                        </div>
+                        <div class="pack-down col">
+                            <span class="fs-ss fc-999">부서</span>
+                            <span th:text="${staff.staffDepartment != null ? staff.staffDepartment.description : '미지정'}"></span>
+                        </div>
+                    </div>
+
+                    <div class="row col-3">
+                        <div class="pack-down col">
+                            <span class="fs-ss fc-999">이메일</span>
+                            <span th:text="${staff.staffEmail}">이메일</span>
+                        </div>
+                        <div class="pack-down col">
+                            <span class="fs-ss fc-999">전화번호</span>
+                            <span th:text="${staff.staffPhone}">전화번호</span>
+                        </div>
+                        <div class="pack-down col">
+                            <span class="fs-ss fc-999">주소</span>
+                            <span th:text="${staff.staffAddress != null ? staff.staffAddress : '미지정'}">주소</span>
+                        </div>
+                    </div>
+
+                    <div class="row col-3">
+                        <div class="pack-down col">
+                            <span class="fs-ss fc-999">생년월일</span>
+                            <span th:text="${staff.staffBirth}">생년월일</span>
+                        </div>
+                        <div class="pack-down col">
+                            <span class="fs-ss fc-999">입사일자</span>
+                            <span th:text="${staff.staffStartDate != null ? staff.staffStartDate : '미지정'}">입사일자</span>
+                        </div>
+
+                        <div class="pack-down col">
+                            <span class="fs-ss fc-999">퇴사일자</span>
+                            <span th:text="${staff.staffEndDate != null ? staff.staffEndDate : '미지정'}">퇴사일자</span>
+                        </div>
+                    </div>
+                </div><!--pack-down.gap-12-->
+
+                <div class="button-area pack-both">
+                    <a href="/admin/staff/list" class="btn medium color1">목록</a>
+                    <a th:href="@{/staff/modify/{id}(id=${staff.id})}" class="btn medium color1">수정</a>
+                </div>
+            </div><!--//.box-wrap-->
+        </main>
+        <div th:replace="~{fragments/footer :: footer}"></div>
+    </div><!-- // #container  -->
+</div><!-- // #wrap  -->
+</body></html>

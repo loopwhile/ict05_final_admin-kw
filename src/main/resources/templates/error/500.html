@@ -1,0 +1,15 @@
+<!DOCTYPE html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org" th:replace="~{error/base :: layout(~{::title}, ~{::section})}">
+<head><title>서버 오류 (500)</title></head>
+<body>
+<section>
+    <p class="msg">
+        처리 중 문제가 발생했습니다.<br/>
+        잠시 후 다시 시도해 주세요.
+    </p>
+    <ul class="hint">
+        <li>문제가 지속되면 <code>요청 ID</code>와 함께 제보해 주세요.</li>
+    </ul>
+</section>
+</body>
+</html>
