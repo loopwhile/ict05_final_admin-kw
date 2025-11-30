@@ -78,9 +78,18 @@ pipeline {
         // Stage 4: Trigger the deployment on the EC2 server
         stage('Deploy to EC2') {
             steps {
-                echo "Executing deployment script on EC2 for 'admin' services..."
-                // Jenkins가 EC2 인스턴스에서 직접 실행되므로, 스크립트를 바로 실행
-                sh '/home/ubuntu/deploy/deploy.sh admin'
+                echo "Executing deployment script on EC2 via SSH..."
+                // 등록한 SSH 키 파일을 사용해 EC2에 접속하여 스크립트 실행
+                withCredentials([file(credentialsId: 'ec2-ssh-key', variable: 'SSH_KEY_FILE')]) {
+                    script {
+                        // 1. 키 파일 권한 설정 (필수)
+                        sh 'chmod 600 $SSH_KEY_FILE'
+                        
+                        // 2. SSH로 접속해서 스크립트 실행 (StrictHostKeyChecking=no 옵션으로 접속 확인 무시)
+                        // 주의: ubuntu@172.31.37.197 부분은 사용자님의 EC2 사설 IP입니다.
+                        sh "ssh -o StrictHostKeyChecking=no -i $SSH_KEY_FILE ubuntu@172.31.37.197 '/home/ubuntu/deploy/deploy.sh admin'"
+                    }
+                }
             }
         }
     }
