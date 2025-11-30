@@ -28,6 +28,7 @@ import org.springframework.http.HttpMethod;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
+import org.springframework.web.filter.ForwardedHeaderFilter;
 
 import java.util.List;
 // << ADD
@@ -175,6 +176,11 @@ public class SecurityConfig implements WebMvcConfigurer {
 
         registry.addResourceHandler("/uploads/profile/**")
                 .addResourceLocations(location);
+    }
+
+    @Bean
+    public ForwardedHeaderFilter forwardedHeaderFilter() {
+        return new ForwardedHeaderFilter();
     }
 
 }
