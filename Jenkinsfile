@@ -29,14 +29,28 @@ pipeline {
         // Stage 2: Build and push the Spring Boot backend image
         stage('Build & Push Admin Backend') {
             steps {
-                script {
-                    echo "Building Admin Backend Docker image..."
-                    // 백엔드용 Dockerfile이 프로젝트 루트에 있다고 가정
-                    def customImage = docker.build(ADMIN_BACKEND_IMAGE, ".")
-                    
-                    echo "Pushing Admin Backend image to Docker Hub..."
-                    docker.withRegistry('https://registry.hub.docker.com', DOCKERHUB_CREDENTIALS) {
-                        customImage.push("latest")
+                // Use withCredentials to access the secret file
+                withCredentials([file(credentialsId: 'firebase-admin-key', variable: 'FIREBASE_ADMIN_KEY_FILE')]) {
+                    script {
+                        // Use a try-finally block to ensure the secret file is cleaned up
+                        try {
+                            echo "Preparing secret file for Docker build..."
+                            // Create the directory and copy the secret file to the location expected by the Dockerfile
+                            sh 'mkdir -p fcm-secret'
+                            sh 'cp $FIREBASE_ADMIN_KEY_FILE fcm-secret/firebase-admin.json'
+
+                            echo "Building Admin Backend Docker image..."
+                            def customImage = docker.build(ADMIN_BACKEND_IMAGE, ".")
+                            
+                            echo "Pushing Admin Backend image to Docker Hub..."
+                            docker.withRegistry('https://registry.hub.docker.com', DOCKERHUB_CREDENTIALS) {
+                                customImage.push("latest")
+                            }
+                        } finally {
+                            // Clean up the secret file and directory from the workspace
+                            echo "Cleaning up secret file..."
+                            sh 'rm -rf fcm-secret'
+                        }
                     }
                 }
             }
