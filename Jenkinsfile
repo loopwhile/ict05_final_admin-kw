@@ -11,10 +11,11 @@ pipeline {
 
     // Environment variables used throughout the pipeline
     environment {
-        DOCKERHUB_CREDENTIALS = credentials('dockerhub-credentials')
-        DOCKERHUB_USERNAME    = 'loopwhile' // As per DevOps.md
-        ADMIN_BACKEND_IMAGE   = "${DOCKERHUB_USERNAME}/ict05-final-admin-backend"
-        ADMIN_PDF_IMAGE       = "${DOCKERHUB_USERNAME}/ict05-final-admin-pdf"
+        // [수정된 부분] Credentials ID 문자열을 환경 변수에 직접 할당
+        DOCKERHUB_CREDENTIALS_ID = 'dockerhub-credentials'
+        DOCKERHUB_USERNAME       = 'loopwhile' // As per DevOps.md
+        ADMIN_BACKEND_IMAGE      = "${DOCKERHUB_USERNAME}/ict05-final-admin-backend"
+        ADMIN_PDF_IMAGE          = "${DOCKERHUB_USERNAME}/ict05-final-admin-pdf"
     }
 
     stages {
@@ -43,7 +44,8 @@ pipeline {
                             def customImage = docker.build(ADMIN_BACKEND_IMAGE, ".")
                             
                             echo "Pushing Admin Backend image to Docker Hub..."
-                            docker.withRegistry('https://registry.hub.docker.com', DOCKERHUB_CREDENTIALS) {
+                            // [수정된 부분] DOCKERHUB_CREDENTIALS_ID 변수 사용
+                            docker.withRegistry('https://registry.hub.docker.com', DOCKERHUB_CREDENTIALS_ID) {
                                 customImage.push("latest")
                             }
                         } finally {
@@ -65,7 +67,8 @@ pipeline {
                     def customImage = docker.build(ADMIN_PDF_IMAGE, "python-pdf-download")
                     
                     echo "Pushing Admin PDF Service image to Docker Hub..."
-                    docker.withRegistry('https://registry.hub.docker.com', DOCKERHUB_CREDENTIALS) {
+                    // [수정된 부분] DOCKERHUB_CREDENTIALS_ID 변수 사용
+                    docker.withRegistry('https://registry.hub.docker.com', DOCKERHUB_CREDENTIALS_ID) {
                         customImage.push("latest")
                     }
                 }
