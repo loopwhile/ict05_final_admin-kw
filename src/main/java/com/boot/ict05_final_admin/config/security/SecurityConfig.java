@@ -95,7 +95,7 @@ public class SecurityConfig implements WebMvcConfigurer {
 
 
     @Bean
-    @Order(1) // 체인 하나만 사용
+    @Order(2) // 체인 하나만 사용
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http
                 .csrf(csrf -> csrf
