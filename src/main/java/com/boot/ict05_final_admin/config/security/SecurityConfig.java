@@ -94,6 +94,7 @@ public class SecurityConfig implements WebMvcConfigurer {
 
                         // 공개 경로
                         .requestMatchers(
+                                "/admin/health",
                                 "/login", "/login/**",
                                 "/register",
                                 "/css/**", "/js/**", "/images/**", "/assets/**",
