@@ -39,7 +39,7 @@ import java.util.List;
 public class SecurityConfig implements WebMvcConfigurer {
 
     private final MemberUserDetailsService memberUserDetailsService;
-    private static final RequestMatcher ADMIN_API = new AntPathRequestMatcher("/admin/API/**");
+    private static final RequestMatcher ADMIN_API = new AntPathRequestMatcher("/API/**");
 
     @Bean
     public PasswordEncoder passwordEncoder() {
@@ -94,16 +94,16 @@ public class SecurityConfig implements WebMvcConfigurer {
 
                         // 공개 경로
                         .requestMatchers(
-                                "/admin/health",
+                                "/health",
                                 "/login", "/login/**",
                                 "/register",
                                 "/css/**", "/js/**", "/images/**", "/assets/**",
-                                "/api/**", "/API/**", // ★ API 전부 허용
+                                "/api/**", "/API/**",
                                 "/uploads/**", "/uploads/profile/**"
                         ).permitAll()
 
-                        // ★ 백업 안전장치: 혹시라도 웹 체인이 잡아도 /admin/API/**는 통과
-                        .requestMatchers("/admin/API/**").permitAll()
+                        // ★ 백업 안전장치: 혹시라도 웹 체인이 잡아도 /API/**는 통과
+                        .requestMatchers("/API/**").permitAll()
 
                         // 역할별 보호 경로
                         .requestMatchers("/store/**").hasAnyRole("FRANCHISE","ADMIN")
