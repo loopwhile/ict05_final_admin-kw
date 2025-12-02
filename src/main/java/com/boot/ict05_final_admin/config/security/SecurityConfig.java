@@ -59,8 +59,12 @@ public class SecurityConfig implements WebMvcConfigurer {
     @Order(0)
     SecurityFilterChain healthChain(HttpSecurity http) throws Exception {
         http
-            .securityMatcher("/health")                   // 컨텍스트(/admin)는 자동 제외된 내부 경로 기준
-            .authorizeHttpRequests(a -> a.anyRequest().permitAll())
+            .securityMatcher(
+                "/health",
+                "/actuator/health",
+                "/actuator/health/**"
+            )
+            .authorizeHttpRequests(auth -> auth.anyRequest().permitAll())
             .csrf(csrf -> csrf.disable())
             .requestCache(c -> c.disable())
             .securityContext(sc -> sc.disable())
