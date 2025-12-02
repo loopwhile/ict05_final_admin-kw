@@ -57,6 +57,19 @@ public class SecurityConfig implements WebMvcConfigurer {
     // 1) API 전용 체인
     @Bean
     @Order(0)
+    SecurityFilterChain healthChain(HttpSecurity http) throws Exception {
+        http
+            .securityMatcher("/health")                   // 컨텍스트(/admin)는 자동 제외된 내부 경로 기준
+            .authorizeHttpRequests(a -> a.anyRequest().permitAll())
+            .csrf(csrf -> csrf.disable())
+            .requestCache(c -> c.disable())
+            .securityContext(sc -> sc.disable())
+            .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS));
+        return http.build();
+    }
+
+    @Bean
+    @Order(1)
     public SecurityFilterChain apiChain(HttpSecurity http,
                                         ObjectProvider<SyncAuthFilter> syncAuthFilterProvider) throws Exception {
         http
