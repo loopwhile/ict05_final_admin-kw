@@ -7,6 +7,7 @@ pipeline {
     environment {
         DOCKERHUB_CREDENTIALS_ID = 'dockerhub-credentials'
         COMPOSE_FILE             = 'docker-compose.yml'
+        COMPOSE_PLUGIN_VERSION   = 'v2.27.0'
     }
 
     stages {
@@ -49,10 +50,29 @@ pipeline {
                     echo "Building and deploying all services using ${COMPOSE_FILE}..."
                     sh label: 'Compose build & up', script: '''
                         set -euxo pipefail
-        
+
                         CF="${COMPOSE_FILE:-docker-compose.yml}"
                         WS="${WORKSPACE:-$(pwd)}"
-        
+
+                        # docker compose v2 플러그인이 Jenkins 이미지에 없을 경우 즉석 설치
+                        CLI_PLUGIN_DIR="${HOME:-/var/jenkins_home}/.docker/cli-plugins"
+                        if ! docker compose version >/dev/null 2>&1; then
+                            echo "docker compose plugin not detected. Installing ${COMPOSE_PLUGIN_VERSION:-v2.27.0} locally..."
+                            mkdir -p "$CLI_PLUGIN_DIR"
+
+                            DOWNLOAD_URL="https://github.com/docker/compose/releases/download/${COMPOSE_PLUGIN_VERSION:-v2.27.0}/docker-compose-linux-x86_64"
+                            if command -v curl >/dev/null 2>&1; then
+                                curl -fsSL "$DOWNLOAD_URL" -o "$CLI_PLUGIN_DIR/docker-compose"
+                            elif command -v wget >/dev/null 2>&1; then
+                                wget -qO "$CLI_PLUGIN_DIR/docker-compose" "$DOWNLOAD_URL"
+                            else
+                                echo "ERROR: Neither curl nor wget is available to download docker compose." >&2
+                                exit 5
+                            fi
+
+                            chmod +x "$CLI_PLUGIN_DIR/docker-compose"
+                        fi
+
                         # 워크스페이스에 compose 파일 존재 확인
                         if [ -f "$CF" ]; then
                             CF_HOST_PATH="$WS/$CF"   # WS와 동일 위치라면 이 절도 안전
