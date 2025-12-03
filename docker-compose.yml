@@ -57,7 +57,7 @@ services:
       - SPRING_DATASOURCE_PASSWORD=ictpass123
       - GOOGLE_APPLICATION_CREDENTIALS=/app/fcm-secret/firebase-admin.json
     volumes:
-      - ./fcm-secret/firebase-admin.json:/app/fcm-secret/firebase-admin.json:ro
+      - ./fcm-secret:/app/fcm-secret:ro
     networks:
       - ict_network
     depends_on:
@@ -95,7 +95,7 @@ services:
       - SPRING_DATASOURCE_PASSWORD=ictpass123
       - GOOGLE_APPLICATION_CREDENTIALS=/app/fcm-secret/firebase-admin.json
     volumes:
-      - ${USER_PROJECT_PATH:-../ict05_final_user-kw}/fcm-secret/firebase-admin.json:/app/fcm-secret/firebase-admin.json:ro
+      - ${USER_PROJECT_PATH:-../ict05_final_user-kw}/fcm-secret:/app/fcm-secret:ro
     networks:
       - ict_network
     depends_on:
