@@ -43,6 +43,9 @@ pipeline {
         // 4단계: 통합 빌드 및 배포 (자동 감지 및 컨테이너 폴백 기능)
         stage('Build and Deploy All Services') {
             steps {
+                echo "Debugging: Listing files in current workspace..."
+                sh 'ls -la'
+
                 echo "Building and deploying all services using ${COMPOSE_FILE}..."
                 sh label: 'Compose build & up', script: '''
                     set -euxo pipefail
