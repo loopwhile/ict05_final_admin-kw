@@ -44,7 +44,7 @@ pipeline {
             steps {
                 echo "Building and deploying all services using ${COMPOSE_FILE}..."
                 // docker-compose.yml에 정의된 모든 서비스를 빌드하고 재시작
-                sh "docker-compose -f ${COMPOSE_FILE} up -d --build"
+                sh "/usr/local/bin/docker-compose -f ${COMPOSE_FILE} up -d --build"
             }
         }
     }
