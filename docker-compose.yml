@@ -82,7 +82,7 @@ services:
   #---------------------------------
   user-backend:
     build:
-      context: ../ict05_final_user-kw # user-kw 프로젝트 루트
+      context: ${USER_PROJECT_PATH:-../ict05_final_user-kw} # user-kw 프로젝트 루트
       dockerfile: Dockerfile
     container_name: ict05-user-backend-kw
     image: loopwhile/ict05-final-user-backend
@@ -95,7 +95,7 @@ services:
       - SPRING_DATASOURCE_PASSWORD=ictpass123
       - GOOGLE_APPLICATION_CREDENTIALS=/app/fcm-secret/firebase-admin.json
     volumes:
-      - ../ict05_final_user-kw/fcm-secret/firebase-admin.json:/app/fcm-secret/firebase-admin.json:ro
+      - ${USER_PROJECT_PATH:-../ict05_final_user-kw}/fcm-secret/firebase-admin.json:/app/fcm-secret/firebase-admin.json:ro
     networks:
       - ict_network
     depends_on:
@@ -105,7 +105,7 @@ services:
 
   user-frontend:
     build:
-      context: ../ict05_final_user-kw/front-end
+      context: ${USER_PROJECT_PATH:-../ict05_final_user-kw}/front-end
       dockerfile: Dockerfile
     container_name: ict05-user-frontend-kw
     image: loopwhile/ict05-final-user-frontend
@@ -117,7 +117,7 @@ services:
 
   user-pdf:
     build:
-      context: ../ict05_final_user-kw/python-pdf-download
+      context: ${USER_PROJECT_PATH:-../ict05_final_user-kw}/python-pdf-download
       dockerfile: Dockerfile
     container_name: ict05-user-pdf-kw
     image: loopwhile/ict05-final-user-pdf

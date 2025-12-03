@@ -8,6 +8,7 @@ pipeline {
         DOCKERHUB_CREDENTIALS_ID = 'dockerhub-credentials'
         COMPOSE_FILE             = 'docker-compose.yml'
         COMPOSE_PLUGIN_VERSION   = 'v2.27.0'
+        USER_PROJECT_DIR         = 'ict05_final_user-kw'
     }
 
     stages {
@@ -53,6 +54,13 @@ pipeline {
 
                         CF="${COMPOSE_FILE:-docker-compose.yml}"
                         WS="${WORKSPACE:-$(pwd)}"
+                        USER_PROJECT_PATH="${USER_PROJECT_PATH:-$WS/${USER_PROJECT_DIR:-ict05_final_user-kw}}"
+
+                        if [ ! -d "$USER_PROJECT_PATH" ]; then
+                            echo "WARNING: USER_PROJECT_PATH ($USER_PROJECT_PATH) does not exist."
+                        fi
+                        export USER_PROJECT_PATH
+                        echo "USER_PROJECT_PATH resolved to: $USER_PROJECT_PATH"
 
                         # docker compose v2 플러그인이 Jenkins 이미지에 없을 경우 즉석 설치
                         CLI_PLUGIN_DIR="${HOME:-/var/jenkins_home}/.docker/cli-plugins"
