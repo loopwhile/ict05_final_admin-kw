@@ -9,6 +9,7 @@ pipeline {
         COMPOSE_FILE             = 'docker-compose.yml'
         COMPOSE_PLUGIN_VERSION   = 'v2.27.0'
         USER_PROJECT_DIR         = 'ict05_final_user-kw'
+        FIREBASE_CREDENTIALS_ID  = 'firebase-admin-key'
     }
 
     stages {
@@ -49,12 +50,18 @@ pipeline {
                     sh 'ls -la'
         
                     echo "Building and deploying all services using ${COMPOSE_FILE}..."
-                    sh label: 'Compose build & up', script: '''
-                        set -euxo pipefail
+                    withCredentials([file(credentialsId: "${env.FIREBASE_CREDENTIALS_ID}", variable: 'FIREBASE_ADMIN_KEY_FILE')]) {
+                        sh label: 'Compose build & up', script: '''
+                            set -euxo pipefail
 
-                        CF="${COMPOSE_FILE:-docker-compose.yml}"
-                        WS="${WORKSPACE:-$(pwd)}"
-                        USER_PROJECT_PATH="${USER_PROJECT_PATH:-$WS/${USER_PROJECT_DIR:-ict05_final_user-kw}}"
+                            trap 'rm -rf fcm-secret' EXIT
+
+                            mkdir -p fcm-secret
+                            cp "$FIREBASE_ADMIN_KEY_FILE" fcm-secret/firebase-admin.json
+
+                            CF="${COMPOSE_FILE:-docker-compose.yml}"
+                            WS="${WORKSPACE:-$(pwd)}"
+                            USER_PROJECT_PATH="${USER_PROJECT_PATH:-$WS/${USER_PROJECT_DIR:-ict05_final_user-kw}}"
 
                         if [ ! -d "$USER_PROJECT_PATH" ]; then
                             echo "WARNING: USER_PROJECT_PATH ($USER_PROJECT_PATH) does not exist."
@@ -130,6 +137,7 @@ pipeline {
         
                         $COMPOSE -f "$CF_ARG" ps
                     '''
+                    }
                 }
             }    }
 
