@@ -54,7 +54,14 @@ pipeline {
                         sh label: 'Compose build & up', script: '''
                             set -euxo pipefail
 
-                            trap 'rm -rf fcm-secret' EXIT
+                            cleanup() {
+                                rm -rf fcm-secret
+                                if [ -n "$USER_SECRET_TARGET" ] && [ -f "$USER_SECRET_TARGET" ]; then
+                                    rm -f "$USER_SECRET_TARGET"
+                                    rmdir "$(dirname "$USER_SECRET_TARGET")" 2>/dev/null || true
+                                fi
+                            }
+                            trap cleanup EXIT
 
                             mkdir -p fcm-secret
                             cp "$FIREBASE_ADMIN_KEY_FILE" fcm-secret/firebase-admin.json
@@ -62,6 +69,14 @@ pipeline {
                             CF="${COMPOSE_FILE:-docker-compose.yml}"
                             WS="${WORKSPACE:-$(pwd)}"
                             USER_PROJECT_PATH="${USER_PROJECT_PATH:-$WS/${USER_PROJECT_DIR:-ict05_final_user-kw}}"
+
+                            if [ -d "$USER_PROJECT_PATH" ]; then
+                                mkdir -p "$USER_PROJECT_PATH/fcm-secret"
+                                cp "$FIREBASE_ADMIN_KEY_FILE" "$USER_PROJECT_PATH/fcm-secret/firebase-admin.json"
+                                USER_SECRET_TARGET="$USER_PROJECT_PATH/fcm-secret/firebase-admin.json"
+                            else
+                                USER_SECRET_TARGET=""
+                            fi
 
                         if [ ! -d "$USER_PROJECT_PATH" ]; then
                             echo "WARNING: USER_PROJECT_PATH ($USER_PROJECT_PATH) does not exist."
