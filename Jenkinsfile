@@ -41,44 +41,69 @@ pipeline {
         }
 
         // 4단계: 통합 빌드 및 배포 (자동 감지 및 컨테이너 폴백 기능)
-        stage('Build and Deploy All Services') {
-            steps {
-                echo "Debugging: Listing files in current workspace..."
-                sh 'ls -la'
-
-                echo "Building and deploying all services using ${COMPOSE_FILE}..."
-                sh label: 'Compose build & up', script: '''
-                    set -euxo pipefail
-
-                    # Compose 명령 자동 감지 (v2 → v1 → 컨테이너 폴백)
-                    if docker compose version >/dev/null 2>&1; then
-                        COMPOSE="docker compose"
-                    elif command -v docker-compose >/dev/null 2>&1; then
-                        COMPOSE="docker-compose"
-                    else
-                        echo "Docker Compose not found locally, falling back to containerized compose."
-                        COMPOSE_IMAGE="docker/compose:1.29.2"
-                        # 경로에 불필요한 따옴표나 이스케이프가 들어가지 않도록 수정
-                        COMPOSE="docker run --rm -i \
-                            -v /var/run/docker.sock:/var/run/docker.sock \
-                            -v $WORKSPACE:$WORKSPACE -w $WORKSPACE \
-                            -v ${HOME}/.docker:/root/.docker:ro \
-                            ${COMPOSE_IMAGE}"
-                    fi
-
-                    echo "Using compose command: $COMPOSE"
-
-                    # 안정적인 배포를 위해 pull -> build -> up 순서로 실행
-                    $COMPOSE -f docker-compose.yml pull --ignore-pull-failures
-                    $COMPOSE -f docker-compose.yml build
-                    $COMPOSE -f docker-compose.yml up -d --remove-orphans
-                    
-                    echo "Deployment finished. Showing running containers:"
-                    $COMPOSE -f docker-compose.yml ps
-                '''
-            }
-        }
-    }
+            stage('Build and Deploy All Services') {
+                steps {
+                    echo "Debugging: Listing files in current workspace..."
+                    sh 'ls -la'
+        
+                    echo "Building and deploying all services using ${COMPOSE_FILE}..."
+                    sh label: 'Compose build & up', script: '''
+                        set -euxo pipefail
+        
+                        CF="${COMPOSE_FILE:-docker-compose.yml}"
+                        WS="${WORKSPACE:-$(pwd)}"
+        
+                        # 워크스페이스에 compose 파일 존재 확인
+                        if [ -f "$CF" ]; then
+                            CF_HOST_PATH="$WS/$CF"   # WS와 동일 위치라면 이 절도 안전
+                            [ -f "$CF_HOST_PATH" ] || CF_HOST_PATH="$CF"
+                        elif [ -f "$WS/$CF" ]; then
+                            CF_HOST_PATH="$WS/$CF"
+                        else
+                            echo "ERROR: ${WS} 내에 ${CF} 파일을 찾지 못했습니다."
+                            exit 2
+                        fi
+        
+                        # 로컬 Compose 우선 사용 (v2 → v1)
+                        if docker compose version >/dev/null 2>&1; then
+                            COMPOSE="docker compose"
+                            CF_ARG="$CF_HOST_PATH"   # 로컬은 호스트 경로 그대로 사용
+                        elif command -v docker-compose >/dev/null 2>&1; then
+                            COMPOSE="docker-compose"
+                            CF_ARG="$CF_HOST_PATH"
+                        else
+                            echo "Docker Compose not found locally, falling back to containerized compose."
+                            COMPOSE_IMAGE="docker/compose:2.27.0"
+        
+                            # 컨테이너에서는 /work 로 고정 마운트 후 절대경로 사용
+                            COMPOSE="docker run --rm -i \
+                                -v /var/run/docker.sock:/var/run/docker.sock \
+                                -v \"$WS\":/work -w /work \
+                                -v \"${HOME:-/var/jenkins_home}/.docker\":/root/.docker:ro \
+                                $COMPOSE_IMAGE"
+                            CF_ARG="/work/$(basename \"$CF_HOST_PATH\")"
+                        fi
+        
+                        echo "Using compose command: $COMPOSE"
+                        echo "Compose file (arg):   $CF_ARG"
+        
+                        # 사전 가시성 점검(컨테이너에서도 보이는지 확인)
+                        if echo "$COMPOSE" | grep -q '^docker run'; then
+                            docker run --rm -i -v "$WS":/work -w /work alpine:3.20 ls -la /work || true
+                            docker run --rm -i -v "$WS":/work -w /work alpine:3.20 test -f "$CF_ARG"
+                        else
+                            test -f "$CF_ARG"
+                        fi
+        
+                        # 안정화 시퀀스: pull → build → up --remove-orphans
+                        $COMPOSE -f "$CF_ARG" pull --ignore-pull-failures || true
+                        $COMPOSE -f "$CF_ARG" build --pull
+                        $COMPOSE -f "$CF_ARG" up -d --remove-orphans
+        
+                        $COMPOSE -f "$CF_ARG" ps
+                    '''
+                }
+            }    }
 
     post {
         always {
