@@ -1,109 +1,152 @@
-version: "3.8"
+version: '3.8'
+
+# =================================================================
+# 통합 배포용 Docker Compose
+# 모든 서비스(admin, user, db, nginx)를 단일 파일로 관리합니다.
+# Jenkins에서 이 파일을 사용하여 'docker compose up --build'를 실행합니다.
+# =================================================================
+
+networks:
+  ict_network:
+    driver: bridge
+    name: ict_network
 
 services:
-  db:
-    image: "mariadb:10.11"
-    container_name: "ict05-mariadb"
+  #---------------------------------
+  # 데이터베이스
+  #---------------------------------
+  mariadb:
+    image: mariadb:10.5
+    container_name: ict05-mariadb
     environment:
-      MARIADB_DATABASE: "ict05final"
-      MARIADB_USER: "ict05final"
-      MARIADB_PASSWORD: "ictpass123"
-      MARIADB_ROOT_PASSWORD: "rootpass123"
+      - MARIADB_ROOT_PASSWORD=rootpass123
+      - MARIADB_DATABASE=ict05final
+      - MARIADB_USER=ict05final
+      - MARIADB_PASSWORD=ictpass123
     volumes:
       - db_data:/var/lib/mysql
-    restart: unless-stopped
+    ports:
+      - "3306:3306"
+    command:
+      - --character-set-server=utf8mb4
+      - --collation-server=utf8mb4_unicode_ci
     networks:
-      - toastlab-net
+      - ict_network
+    restart: always
     healthcheck:
-      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
       interval: 10s
       timeout: 5s
       retries: 3
 
-  admin-app:
-    build: ./ict05_final_admin
-    container_name: "ict05-admin-app"
-    environment:
-      SPRING_PROFILES_ACTIVE: "prod,receive"
-      SPRING_DATASOURCE_URL: jdbc:mariadb://db:3306/ict05final
-      SPRING_DATASOURCE_USERNAME: ict05final
-      SPRING_DATASOURCE_PASSWORD: ictpass123
+  #---------------------------------
+  # ADMIN 서비스
+  #---------------------------------
+  admin-backend:
+    build:
+      context: . # admin-kw 프로젝트 루트
+      dockerfile: Dockerfile
+    container_name: ict05-admin-backend-kw
+    image: loopwhile/ict05-final-admin-backend
     expose:
-      - "8081"
-    depends_on:
-      db:
-        condition: service_healthy
-    networks:
-      - toastlab-net
-
-  user-app:
-    build: ./ict05_final_user
-    container_name: ict05-user-app
+      - "8081" # 내부 통신용 포트
     environment:
-      SPRING_PROFILES_ACTIVE: "prod,receive"
-      SPRING_DATASOURCE_URL: jdbc:mariadb://db:3306/ict05final
-      SPRING_DATASOURCE_USERNAME: ict05final
-      SPRING_DATASOURCE_PASSWORD: ictpass123
-    expose:
-      - "8082"
+      - SPRING_PROFILES_ACTIVE=prod,receive
+      - SPRING_DATASOURCE_URL=jdbc:mariadb://mariadb:3306/ict05final
+      - SPRING_DATASOURCE_USERNAME=ict05final
+      - SPRING_DATASOURCE_PASSWORD=ictpass123
+      - GOOGLE_APPLICATION_CREDENTIALS=/app/fcm-secret/firebase-admin.json
+    volumes:
+      - ./fcm-secret/firebase-admin.json:/app/fcm-secret/firebase-admin.json:ro
+    networks:
+      - ict_network
     depends_on:
-      db:
+      mariadb:
         condition: service_healthy
-    networks:
-      - toastlab-net
+    restart: unless-stopped
 
-  nginx:
-    image: nginx:1.27
-    container_name: ict05-nginx
-    ports:
-      - "80:80"
-      - "443:443"
-    volumes:
-      - ./nginx.conf:/etc/nginx/nginx.conf:ro
-      - ./ict05_final_user/front-end/build:/usr/share/nginx/html/user:ro
-      - ./certbot/conf:/etc/letsencrypt:ro
-      - ./certbot/www:/var/www/certbot:ro
-    depends_on:
-      - admin-app
-      - user-app
-    networks:
-      - toastlab-net
-
-  certbot:
-    image: certbot/certbot
-    container_name: ict05-certbot
-    volumes:
-      - ./certbot/conf:/etc/letsencrypt
-      - ./certbot/www:/var/www/certbot
-    entrypoint: "/bin/sh -c 'trap exit TERM; while :; do certbot renew; sleep 12h & wait $${!}; done;'"
-    networks:
-      - toastlab-net
-
-  pdf-app:
-    build: ./ict05_final_admin/python-pdf-download
-    container_name: ict05-pdf-app
+  admin-pdf:
+    build:
+      context: ./python-pdf-download
+      dockerfile: Dockerfile
+    container_name: ict05-admin-pdf-kw
+    image: loopwhile/ict05-final-admin-pdf
     expose:
       - "8000"
     networks:
-      - toastlab-net
+      - ict_network
+    restart: unless-stopped
 
-  user-pdf-app:
-    build: ./ict05_final_user/python-pdf-download
-    container_name: ict05-user-pdf-app
+  #---------------------------------
+  # USER 서비스
+  #---------------------------------
+  user-backend:
+    build:
+      context: ../ict05_final_user-kw # user-kw 프로젝트 루트
+      dockerfile: Dockerfile
+    container_name: ict05-user-backend-kw
+    image: loopwhile/ict05-final-user-backend
+    expose:
+      - "8082"
+    environment:
+      - SPRING_PROFILES_ACTIVE=prod,receive
+      - SPRING_DATASOURCE_URL=jdbc:mariadb://mariadb:3306/ict05final
+      - SPRING_DATASOURCE_USERNAME=ict05final
+      - SPRING_DATASOURCE_PASSWORD=ictpass123
+      - GOOGLE_APPLICATION_CREDENTIALS=/app/fcm-secret/firebase-admin.json
+    volumes:
+      - ../ict05_final_user-kw/fcm-secret/firebase-admin.json:/app/fcm-secret/firebase-admin.json:ro
+    networks:
+      - ict_network
+    depends_on:
+      mariadb:
+        condition: service_healthy
+    restart: unless-stopped
+
+  user-frontend:
+    build:
+      context: ../ict05_final_user-kw/front-end
+      dockerfile: Dockerfile
+    container_name: ict05-user-frontend-kw
+    image: loopwhile/ict05-final-user-frontend
+    expose:
+      - "80" # 프론트엔드 Nginx는 80번 포트로 서비스
+    networks:
+      - ict_network
+    restart: unless-stopped
+
+  user-pdf:
+    build:
+      context: ../ict05_final_user-kw/python-pdf-download
+      dockerfile: Dockerfile
+    container_name: ict05-user-pdf-kw
+    image: loopwhile/ict05-final-user-pdf
     expose:
       - "8001"
     networks:
-      - toastlab-net
+      - ict_network
+    restart: unless-stopped
+
+  #---------------------------------
+  # NGINX 리버스 프록시
+  #---------------------------------
+  nginx:
+    build:
+      context: .
+      dockerfile: nginx.Dockerfile # admin-kw 루트의 nginx.Dockerfile 사용
+    container_name: ict05-nginx-kw
+    ports:
+      - "443:443"
+      - "80:80"
+    volumes:
+      - /etc/letsencrypt:/etc/letsencrypt:ro
+    depends_on:
+      - admin-backend
+      - user-backend
+      - user-frontend
+    networks:
+      - ict_network
+    restart: always
 
 volumes:
   db_data:
-  uploads_profile:
-    driver: local
-    driver_opts:
-      type: none
-      o: bind
-      device: /home/ubuntu/src/final/ict05_uploads/profile
-
-networks:
-  toastlab-net:
-    name: toastlab-net
