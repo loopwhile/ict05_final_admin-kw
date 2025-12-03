@@ -45,69 +45,37 @@ pipeline {
             // 4단계: 통합 빌드 및 배포 (자동 감지 및 컨테이너 폴백 기능)
 
             stage('Build and Deploy All Services') {
-
                 steps {
-
                     echo "Building and deploying all services using ${COMPOSE_FILE}..."
-
                     sh label: 'Compose build & up', script: '''
-
                         set -euxo pipefail
 
-        
-
                         # Compose 명령 자동 감지 (v2 → v1 → 컨테이너 폴백)
-
                         if docker compose version >/dev/null 2>&1; then
-
                             COMPOSE="docker compose"
-
                         elif command -v docker-compose >/dev/null 2>&1; then
-
                             COMPOSE="docker-compose"
-
                         else
-
                             echo "Docker Compose not found locally, falling back to containerized compose."
-
-                            COMPOSE_IMAGE="docker/compose:1.29.2" # 이전에 설치했던 v1 버전과 맞춤
-
+                            COMPOSE_IMAGE="docker/compose:1.29.2"
                             COMPOSE="docker run --rm -i \
-
                                 -v /var/run/docker.sock:/var/run/docker.sock \
-
-                                -v \\"$PWD\\":\\"$PWD\\" -w \\"$PWD\\" \
-
-                                -v $HOME/.docker:/root/.docker:ro \
-
+                                -v \\"$WORKSPACE\\":\\"$WORKSPACE\\" -w \\"$WORKSPACE\\" \
+                                -v ${HOME}/.docker:/root/.docker:ro \
                                 ${COMPOSE_IMAGE}"
-
                         fi
-
-        
 
                         echo "Using compose command..."
 
-        
-
                         # 안정적인 배포를 위해 pull -> build -> up 순서로 실행
-
                         $COMPOSE -f docker-compose.yml pull --ignore-pull-failures
-
                         $COMPOSE -f docker-compose.yml build
-
                         $COMPOSE -f docker-compose.yml up -d --remove-orphans
-
                         
-
                         echo "Deployment finished. Showing running containers:"
-
                         $COMPOSE -f docker-compose.yml ps
-
                     '''
-
                 }
-
             }
 
         
