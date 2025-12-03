@@ -6,7 +6,6 @@ pipeline {
 
     environment {
         DOCKERHUB_CREDENTIALS_ID = 'dockerhub-credentials'
-        DOCKERHUB_USERNAME       = 'loopwhile'
         COMPOSE_FILE             = 'docker-compose.yml'
     }
 
@@ -30,21 +29,40 @@ pipeline {
             }
         }
 
-        // 3단계: Docker Hub 로그인
+        // 3단계: Docker Hub 로그인 (보안 강화된 방식)
         stage('Login to Docker Hub') {
             steps {
                 withCredentials([usernamePassword(credentialsId: DOCKERHUB_CREDENTIALS_ID, usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
-                    sh "echo $DOCKER_PASS | docker login -u $DOCKER_USER --password-stdin"
+                    sh '''
+                        echo "$DOCKER_PASS" | docker login -u "$DOCKER_USER" --password-stdin
+                    '''
                 }
             }
         }
 
-        // 4단계: 통합 빌드 및 배포
+        // 4단계: 통합 빌드 및 배포 (자동 감지 기능 추가)
         stage('Build and Deploy All Services') {
             steps {
                 echo "Building and deploying all services using ${COMPOSE_FILE}..."
-                // docker-compose.yml에 정의된 모든 서비스를 빌드하고 재시작
-                sh "/usr/local/bin/docker-compose -f ${COMPOSE_FILE} up -d --build"
+                sh '''
+                    set -e # 오류 발생 시 즉시 중단
+
+                    # Compose 명령 자동 감지
+                    if docker compose version >/dev/null 2>&1; then
+                        COMPOSE="docker compose"
+                    elif command -v docker-compose >/dev/null 2>&1; then
+                        COMPOSE="docker-compose"
+                    else
+                        echo "ERROR: Docker Compose가 이 Jenkins 에이전트에 설치되어 있지 않습니다."
+                        exit 1
+                    fi
+
+                    # 안정적인 배포를 위해 pull -> build -> up 순서로 실행
+                    echo "Using compose command: $COMPOSE"
+                    $COMPOSE -f docker-compose.yml pull
+                    $COMPOSE -f docker-compose.yml build
+                    $COMPOSE -f docker-compose.yml up -d
+                '''
             }
         }
     }
